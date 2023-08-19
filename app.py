@@ -143,11 +143,11 @@ def authenticated_session() -> Optional[mwapi.Session]:
                          user_agent=user_agent)
 
 # Create the tracklist items and return the newly-created item IDs.
-def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, include_track_numbers: bool) -> list[int]:
+def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, language: str) -> list[int]:
     track_item_ids = []
     for track in tracklist:
         # Create track item.
-        track_item = create_wikidata_item(session, track, performer_qid)
+        track_item = create_wikidata_item(session, track, performer_qid, language)
         track_item_ids.append(int(track_item['entity']['id'][1:]))
 
     return track_item_ids
@@ -171,7 +171,7 @@ def generate_wikidata_claim_object(property_id: str, item_id: str) -> dict:
         'rank': 'normal'
     }
 
-def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int | None):
+def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int | None, language: str):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
     item_description = 'song'
 
@@ -184,11 +184,12 @@ def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int 
     data = {
         'labels': [
             {
-                'language': 'en', 'value': label
+                'language': language, 'value': label
             }
         ],
         'descriptions': [
             {
+                # Don't set the language code to anything else here because this description is only valid in English.
                 'language': 'en', 'value': item_description
             }
         ],
@@ -342,6 +343,7 @@ def album_post(item_id: int) -> RRV:
         tracklist = flask.request.form.get('tracklist')
         performer_qid = flask.request.form.get('performer_qid')
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
+        language = flask.request.form.get('language')
     else:
         csrf_error = True
         flask.g.repeat_form = True
@@ -371,7 +373,7 @@ def album_post(item_id: int) -> RRV:
         session,
         [track.strip() for track in tracklist.splitlines()],
         performer_qid,
-        include_track_numbers
+        language
     )
 
     add_tracklist_to_album_item(session, item_id, track_ids, include_track_numbers)
