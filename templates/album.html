@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block main %}
 <div>
-  <h1>Add tracks to <a href="https://www.wikidata.org/wiki/Q{{item_id}}" target="_blank">Q{{ item_id }}</a></h1>
+  <h1>Add tracks to {{ wikidata_link(item_id) }}</h1>
   <h3>{{ item_name }}</h3>
+  {% if performer_name != None %}
+    <h4>Performer: {{ performer_name }} ({{ wikidata_link(performer_item_id) }})</h4>
+  {% endif %}
 </div>
 <br/>
 {% if csrf_error %}
@@ -32,9 +35,9 @@
       <div class="input-group-prepend">
         <span class="input-group-text" id="performer">Performer QID</span>
       </div>
-      <input type="text" class="form-control" id="performer-qid" name="performer_qid" aria-describedby="performer">
+      <input type="text" class="form-control" id="performer-qid" name="performer_qid" aria-describedby="performer" value="{{ performer_item_id }}">
     </div>
-    <small id="performerHelp" class="form-text text-muted">If left empty, no performer will be added to track items.</small>
+    <small id="performerHelp" class="form-text text-muted">Just the numeric ID. If left empty, no performer will be added to track items.</small>
   </div>
 
   <div class="form-group form-check">

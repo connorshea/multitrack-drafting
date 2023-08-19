@@ -14,7 +14,7 @@ import string
 import toolforge
 from typing import Optional, Tuple
 import yaml
-from glom import glom
+from glom import glom, Path
 
 app = flask.Flask(__name__)
 
@@ -22,6 +22,7 @@ user_agent = toolforge.set_user_agent(
     'multitrack-drafting',
     email='connor.james.shea+wikidata@gmail.com')
 
+TEST_WIKIDATA = True
 
 @decorator.decorator
 def read_private(func, *args, **kwargs):
@@ -54,7 +55,7 @@ if 'OAUTH' in app.config:
     oauth_config = app.config['OAUTH']
     consumer_token = mwoauth.ConsumerToken(oauth_config['consumer_key'],
                                            oauth_config['consumer_secret'])
-    index_php = 'https://test.wikidata.org/w/index.php'
+    index_php = 'https://test.wikidata.org/w/index.php' if TEST_WIKIDATA else 'https://www.wikidata.org/w/index.php'
 
 
 @app.template_global()
@@ -97,6 +98,10 @@ def user_link(user_name: str) -> Markup:
             Markup(r'</bdi>') +
             Markup(r'</a>'))
 
+@app.template_global()
+def wikidata_link(item_id: int) -> Markup:
+    url = f'https://test.wikidata.org/wiki/Q{item_id}' if TEST_WIKIDATA else f'https://www.wikidata.org/wiki/Q{item_id}'
+    return Markup('<a href="' + str(url) + '" target="_blank">Q' + str(item_id) + '</a>')
 
 @app.template_global()
 def authentication_area() -> Markup:
@@ -126,9 +131,23 @@ def authenticated_session() -> Optional[mwapi.Session]:
                                     client_secret=consumer_token.secret,
                                     resource_owner_key=access_token.key,
                                     resource_owner_secret=access_token.secret)
-    return mwapi.Session(host='https://test.wikidata.org',
+    return mwapi.Session(host='https://test.wikidata.org' if TEST_WIKIDATA else 'https://www.wikidata.org',
                          auth=auth,
                          user_agent=user_agent)
+
+# TODO: Add a function to create the tracklist items.
+def create_tracklist_items(tracklist: str, performer_qid: str, include_track_numbers: bool) -> None:
+    print(tracklist)
+    return None
+
+PERFORMER_PROPERTY = 'P97837' if TEST_WIKIDATA else 'P175'
+TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
+
+def get_wikidata_item(session, item_id) -> str | None:
+    return glom(session.get(action='wbgetentities', ids=f'Q{item_id}'), f'entities.Q{item_id}', default=None)
+
+def get_wikidata_item_name(session, item_id, lang: str = 'en') -> str | None:
+    return glom(get_wikidata_item(session, item_id), f'labels.{lang}.value', default=None)
 
 
 @app.route('/')
@@ -138,29 +157,36 @@ def index() -> RRV:
 
 @app.get('/album/Q<item_id>')
 def album_get(item_id: int) -> RRV:
+    warnings = []
     session = authenticated_session()
     if session is None:
         # Bail out early if we aren’t logged in.
         return flask.redirect(flask.url_for('login'))
 
     # fetch item from Wikidata
-    item_entity = session.get(action='wbgetentities', ids=f'Q{item_id}')
+    item_entity = get_wikidata_item(session, item_id)
+
     # Handle the case where the item doesn't exist on Wikidata.
-    item_missing = glom(item_entity, f'entities.Q{item_id}.missing', default=None)
+    item_missing = glom(item_entity, 'missing', default=None)
     if item_missing != None:
         return flask.render_template('album.html',
                                      item_id=item_id,
                                      item_name='No English title on Wikidata',
                                      errors=[f'Item Q{item_id} does not exist on Wikidata'])
 
-    item_name = glom(item_entity, f'entities.Q{item_id}.labels.en.value', default='No English title on Wikidata')
+    item_name = glom(item_entity, 'labels.en.value', default='No English title on Wikidata')
+    performer_item_id = glom(item_entity, Path('claims', PERFORMER_PROPERTY, 0, 'mainsnak', 'datavalue', 'value', 'numeric-id'), default=None)
+    performer_name = None if performer_item_id == None else get_wikidata_item_name(session, performer_item_id, 'en')
 
-    # TODO: Add checks for whether the item is an album and whether it has a tracklist
+    # TODO: Add checks for whether the item is an album and whether it already has a tracklist
 
     return flask.render_template('album.html',
                                  item_id=item_id,
                                  item_name=item_name,
-                                 errors=None)
+                                 performer_item_id=performer_item_id,
+                                 performer_name=performer_name,
+                                 errors=None,
+                                 warnings=warnings)
 
 
 @app.post('/album/Q<item_id>')
@@ -190,6 +216,9 @@ def album_post(item_id: int) -> RRV:
         # Bail out early if we aren’t logged in.
         return flask.redirect(flask.url_for('login'))
 
+    create_tracklist_items(tracklist, performer_qid, include_track_numbers)
+
+    # TODO: Figure out the best way to render this without losing the item_name we pulled from Wikidata, and any other checks.
     return flask.render_template('album.html',
                                  item_id=item_id,
                                  csrf_error=csrf_error,
