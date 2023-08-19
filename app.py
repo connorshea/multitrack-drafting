@@ -27,6 +27,7 @@ TEST_WIKIDATA = True
 INSTANCE_OF_PROPERTY = 'P82' if TEST_WIKIDATA else 'P31'
 PERFORMER_PROPERTY = 'P97837' if TEST_WIKIDATA else 'P175'
 TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
+SERIES_ORDINAL_PROPERTY = 'P551' if TEST_WIKIDATA else 'P1545'
 ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
 SONG_ITEM = 'Q1811' if TEST_WIKIDATA else 'Q7366'
 
@@ -212,6 +213,52 @@ def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int 
         data=json.dumps(data)
     )
 
+def add_tracklist_to_album_item(session: mwapi.Session, item_id: int, track_ids: list[int], include_track_numbers: bool):
+    csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
+
+    # Add the tracklist claim.
+    data = {
+        'claims': [
+            {
+                'mainsnak': {
+                    'snaktype': 'value',
+                    'property': TRACKLIST_PROPERTY,
+                    'datatype': 'wikibase-item',
+                    'datavalue': {
+                        'value': {
+                            'entity-type': 'wikibase-item',
+                            'numeric-id': track_id,
+                            'id': f'Q{track_id}'
+                        },
+                        'type': 'wikibase-entityid'
+                    }
+                },
+                'type': 'statement',
+                'rank': 'normal',
+                'qualifiers': {} if include_track_numbers == False else {
+                    SERIES_ORDINAL_PROPERTY: [
+                        {
+                            'snaktype': 'value',
+                            'property': SERIES_ORDINAL_PROPERTY,
+                            'datatype': 'string',
+                            'datavalue': {
+                                'value': str(i + 1), # TODO: use '01' when we have more than 9 tracks?
+                                'type': 'string'
+                            }
+                        }
+                    ]
+                }
+            } for i, track_id in enumerate(track_ids)
+        ]
+    }
+
+    return session.post(
+        action='wbeditentity',
+        id=f'Q{item_id}',
+        token=csrf_token_from_wikidata,
+        data=json.dumps(data)
+    )
+
 # We can optionally pass it an item to avoid making an extra API call.
 def get_wikidata_item(session: mwapi.Session, item_id: int, item = None) -> str | None:
     if item != None:
@@ -326,6 +373,8 @@ def album_post(item_id: int) -> RRV:
         performer_qid,
         include_track_numbers
     )
+
+    add_tracklist_to_album_item(session, item_id, track_ids, include_track_numbers)
 
     # TODO: Figure out the best way to render this without losing the item_name we pulled from Wikidata, and any other checks.
     return flask.render_template('album.html',
