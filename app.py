@@ -30,6 +30,14 @@ TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
 SERIES_ORDINAL_PROPERTY = 'P551' if TEST_WIKIDATA else 'P1545'
 ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
 SONG_ITEM = 'Q1811' if TEST_WIKIDATA else 'Q7366'
+AUDIO_TRACK_ITEM = 'Q232068' if TEST_WIKIDATA else 'Q7302866'
+MUSIC_TRACK_WITH_VOCALS_ITEM = 'Q232069' if TEST_WIKIDATA else 'Q55850593'
+
+TRACK_TYPES = {
+    'song': SONG_ITEM,
+    'audio_track': AUDIO_TRACK_ITEM,
+    'music_track_with_vocals': MUSIC_TRACK_WITH_VOCALS_ITEM
+}
 
 @decorator.decorator
 def read_private(func, *args, **kwargs):
@@ -143,11 +151,11 @@ def authenticated_session() -> Optional[mwapi.Session]:
                          user_agent=user_agent)
 
 # Create the tracklist items and return the newly-created item IDs.
-def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, language: str) -> list[int]:
+def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, language: str, track_type: str) -> list[int]:
     track_item_ids = []
     for track in tracklist:
         # Create track item.
-        track_item = create_wikidata_item(session, track, performer_qid, language)
+        track_item = create_wikidata_item(session, track, performer_qid, language, track_type)
         track_item_ids.append(int(track_item['entity']['id'][1:]))
 
     return track_item_ids
@@ -171,7 +179,7 @@ def generate_wikidata_claim_object(property_id: str, item_id: str) -> dict:
         'rank': 'normal'
     }
 
-def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int | None, language: str):
+def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int | None, language: str, track_type: str):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
     item_description = 'song'
 
@@ -196,9 +204,9 @@ def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int 
         'claims': []
     }
 
-    # Add an instance of song claim.
+    # Add an 'instance of' track type.
     data['claims'].append(
-        generate_wikidata_claim_object(INSTANCE_OF_PROPERTY, SONG_ITEM)
+        generate_wikidata_claim_object(INSTANCE_OF_PROPERTY, TRACK_TYPES[track_type])
     )
     
     # If we have a performer, add it to the data.
@@ -340,6 +348,7 @@ def album_get(item_id: int) -> RRV:
 def album_post(item_id: int) -> RRV:
     csrf_error = False
     if submitted_request_valid():
+        track_type = flask.request.form.get('track_type')
         tracklist = flask.request.form.get('tracklist')
         performer_qid = flask.request.form.get('performer_qid')
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
@@ -373,7 +382,8 @@ def album_post(item_id: int) -> RRV:
         session,
         [track.strip() for track in tracklist.splitlines()],
         performer_qid,
-        language
+        language,
+        track_type
     )
 
     add_tracklist_to_album_item(session, item_id, track_ids, include_track_numbers)

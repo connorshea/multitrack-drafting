@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block main %}
-<div>
+<div class="mt-4">
   <h1>Add tracks to {{ wikidata_link(item_id) }}</h1>
   <h3>{{ item_name }}</h3>
   {% if performer_name != None %}
@@ -30,6 +30,16 @@
 
 <form action="{{ url_for('album_post', item_id=item_id) }}" method="POST">
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
+  <div class="form-group">
+    <label for="track_type">Type of tracks</label>
+    <select class="form-control" id="track_type" name="track_type" aria-describedby="trackTypeHelp">
+      <option value="music_track_with_vocals" selected>Music track with vocals</option>
+      <option value="audio_track">Audio track</option>
+      <option value="song">Song</option>
+    </select>
+    <small id="trackTypeHelp" class="form-text text-muted">The 'instance of' to use for the track items that are created.</small>
+  </div>
 
   <div class="form-group">
     <label for="tracklist">Tracklist</label>
@@ -65,7 +75,7 @@
     <label class="form-check-label" for="include_track_numbers">Include track numbers as qualifiers</label>
   </div>
   
-  <button type="submit" class="btn btn-primary">Create tracklist</button>
+  <button type="submit" class="btn btn-primary mb-5">Create tracklist</button>
 </form>
 {% endif %}
 
