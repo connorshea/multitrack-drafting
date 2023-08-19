@@ -136,10 +136,19 @@ def index() -> RRV:
     return flask.render_template('index.html')
 
 
-@app.route('/greet/<name>')
-def greet(name: str) -> RRV:
-    return flask.render_template('greet.html',
-                                 name=name)
+@app.get('/album/Q<item_id>')
+def album_get(item_id: str) -> RRV:
+    # TODO: fetch item from Wikidata
+    item_name = 'Abbey Road' or 'No English title on Wikidata'
+    return flask.render_template('album.html',
+                                 item_id=item_id,
+                                 item_name=item_name)
+
+@app.post('/album/Q<item_id>')
+def album_post(item_id: str) -> RRV:
+    print(item_id)
+    print(flask.request.form['tracklist']) # it works!
+    return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
 
 @app.route('/praise', methods=['GET', 'POST'])

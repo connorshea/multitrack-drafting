@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block main %}
+<div>
+  <h1>Add tracks to <a href="https://www.wikidata.org/wiki/Q{{item_id}}" target="_blank">Q{{ item_id }}</a></h1>
+  <h3>{{ item_name }}</h3>
+</div>
+<br/>
+<form action="/album/Q{{item_id}}" method="POST">
+  <div class="form-group">
+    <label for="tracklist">Track list</label>
+    <textarea class="form-control" id="tracklist" name="tracklist" rows="10" aria-describedby="tracklistHelp" required></textarea>
+    <small id="tracklistHelp" class="form-text text-muted">Track names need to be separated by linebreaks.</small>
+  </div>
+  <div class="input-group mb-3">
+    <div class="input-group-prepend">
+      <span class="input-group-text" id="performer">Performer QID</span>
+    </div>
+    <input type="text" class="form-control" id="performer-qid" name="performer-qid" aria-describedby="performer">
+  </div>
+
+  <div class="form-group form-check">
+    <input type="checkbox" class="form-check-input" id="include_track_numbers" name="include_track_numbers" checked>
+    <label class="form-check-label" for="include_track_numbers">Include track numbers as qualifiers</label>
+  </div>
+  <button type="submit" class="btn btn-primary">Create tracklist</button>
+</form>
+{% endblock %}

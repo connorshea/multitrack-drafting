@@ -21,12 +21,11 @@
   </li>
   <li>
     <p>
-      <a href="{{ url_for('greet', name='John Doe') }}">The greeting endpoint</a> issues a simple greeting to an arbitrary person.
-      It demonstrates simple URL routes (you can append any name after <code>/greet/</code>, and it will appear in the page),
-      as well as simple templating (including the name in the page).
-      Try setting the name to something hilarious like <a href="{{ url_for('greet', name='<script>alert(\'pwnd\');') }}"><code>&lt;script&gt;alert('pwnd');</code></a>
-      to see how the template automatically escapes user input.
-      (The name can’t contain a slash, hence the missing <code>&lt;/script&gt;</code>.)
+      Example tracks:
+      <ul>
+        <li><a href="{{ url_for('album', item_id=173643) }}">Abbey Road</a></li>
+        <li><a href="{{ url_for('album', item_id=107357225) }}">Briefcase Full of Blues</a></li>
+      </ul>
     </p>
   </li>
   <li>
