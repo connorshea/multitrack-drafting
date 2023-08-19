@@ -137,53 +137,38 @@ def index() -> RRV:
 
 
 @app.get('/album/Q<item_id>')
-def album_get(item_id: str) -> RRV:
+def album_get(item_id: int) -> RRV:
     # TODO: fetch item from Wikidata
     item_name = 'Abbey Road' or 'No English title on Wikidata'
     return flask.render_template('album.html',
                                  item_id=item_id,
                                  item_name=item_name)
 
+
 @app.post('/album/Q<item_id>')
-def album_post(item_id: str) -> RRV:
-    print(item_id)
-    print(flask.request.form['tracklist']) # it works!
-    return flask.redirect(flask.url_for('album_get', item_id=item_id))
-
-
-@app.route('/praise', methods=['GET', 'POST'])
-def praise() -> RRV:
+def album_post(item_id: int) -> RRV:
     csrf_error = False
-    if flask.request.method == 'POST':
-        if submitted_request_valid():
-            praise = flask.request.form.get('praise', 'praise missing')
-            flask.session['praise'] = praise
-        else:
-            csrf_error = True
-            flask.g.repeat_form = True
+    if submitted_request_valid():
+        tracklist = flask.request.form.get('tracklist')
+        performer_qid = flask.request.form.get('performer_qid')
+        include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
+
+        print(item_id)
+        print(tracklist)
+        print(performer_qid)
+        print(include_track_numbers)
+    else:
+        csrf_error = True
+        flask.g.repeat_form = True
+        # Bail out early if we hit a CSRF error.
+        return flask.render_template('album.html',
+                                     item_id=item_id,
+                                     csrf_error=csrf_error)
 
     session = authenticated_session()
-    if session:
-        userinfo = session.get(action='query',
-                               meta='userinfo',
-                               uiprop='options')['query']['userinfo']
-        name = userinfo['name']
-        gender = userinfo['options']['gender']
-        if gender == 'male':
-            default_praise = 'Praise him with great praise!'
-        elif gender == 'female':
-            default_praise = 'Praise her with great praise!'
-        else:
-            default_praise = 'Praise them with great praise!'
-    else:
-        name = None
-        default_praise = 'You rock!'
 
-    praise = flask.session.get('praise', default_praise)
-
-    return flask.render_template('praise.html',
-                                 name=name,
-                                 praise=praise,
+    return flask.render_template('album.html',
+                                 item_id=item_id,
                                  csrf_error=csrf_error)
 
 

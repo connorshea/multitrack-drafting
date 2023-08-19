@@ -5,17 +5,30 @@
   <h3>{{ item_name }}</h3>
 </div>
 <br/>
-<form action="/album/Q{{item_id}}" method="POST">
+{% if csrf_error %}
+<div class="alert alert-warning">
+  There was an error processing your request
+  (<abbr title="cross-site request forgery">CSRF</abbr> protection failed).
+  Please try submitting the form again.
+</div>
+{% endif %}
+<form action="{{ url_for('album_post', item_id=item_id) }}" method="POST">
+  <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
   <div class="form-group">
     <label for="tracklist">Track list</label>
     <textarea class="form-control" id="tracklist" name="tracklist" rows="10" aria-describedby="tracklistHelp" required></textarea>
     <small id="tracklistHelp" class="form-text text-muted">Track names need to be separated by linebreaks.</small>
   </div>
-  <div class="input-group mb-3">
-    <div class="input-group-prepend">
-      <span class="input-group-text" id="performer">Performer QID</span>
+
+  <div class="form-group mb-3">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="performer">Performer QID</span>
+      </div>
+      <input type="text" class="form-control" id="performer-qid" name="performer_qid" aria-describedby="performer">
     </div>
-    <input type="text" class="form-control" id="performer-qid" name="performer-qid" aria-describedby="performer">
+    <small id="performerHelp" class="form-text text-muted">If left empty, no performer will be added to track items.</small>
   </div>
 
   <div class="form-group form-check">
