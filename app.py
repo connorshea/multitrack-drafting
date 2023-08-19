@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import json
 import decorator
 import flask
 from flask.typing import ResponseReturnValue as RRV
@@ -27,6 +28,7 @@ INSTANCE_OF_PROPERTY = 'P82' if TEST_WIKIDATA else 'P31'
 PERFORMER_PROPERTY = 'P97837' if TEST_WIKIDATA else 'P175'
 TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
 ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
+SONG_ITEM = 'Q1811' if TEST_WIKIDATA else 'Q7366'
 
 @decorator.decorator
 def read_private(func, *args, **kwargs):
@@ -139,13 +141,73 @@ def authenticated_session() -> Optional[mwapi.Session]:
                          auth=auth,
                          user_agent=user_agent)
 
-# TODO: Actually create the tracklist items.
-def create_tracklist_items(tracklist: list[str], performer_qid: int | None, include_track_numbers: bool) -> None:
-    print(tracklist)
-    return None
+# Create the tracklist items and return the newly-created item IDs.
+def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, include_track_numbers: bool) -> list[int]:
+    track_item_ids = []
+    for track in tracklist:
+        # Create track item.
+        create_wikidata_item(session, track, performer_qid)
+        track_item = {}
+        track_item_ids.append(track_item['id'])
+
+    return track_item_ids
+
+def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int | None):
+    csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
+    item_description = 'song'
+
+    # If we have a performer, add them to the description.
+    if performer_qid != None:
+        performer_name = get_wikidata_item_name(session, performer_qid, 'en')
+        if performer_name != None:
+            item_description = f'song by {performer_name}'
+
+    data = {
+        'labels': [
+            {
+                'language': 'en', 'value': label
+            }
+        ],
+        'descriptions': [
+            {
+                'language': 'en', 'value': item_description
+            }
+        ],
+        'claims': [
+            {
+                'mainsnak': {
+                    'snaktype': 'value',
+                    'property': INSTANCE_OF_PROPERTY,
+                    'datatype': 'wikibase-item',
+                    'datavalue': {
+                        'value': {
+                            'entity-type': 'wikibase-item',
+                            'numeric-id': int(SONG_ITEM[1:]),
+                            'id': SONG_ITEM
+                        },
+                        'type': 'wikibase-entityid'
+                    }
+                },
+                'type': 'statement',
+                'rank': 'normal'
+            }
+        ]
+    }
+    
+    # If we have a performer, add it to the data.
+    # if performer_qid != None:
+    #     data['claims'].append({})
+
+    print(data)
+    session.post(
+        action='wbeditentity',
+        new='item',
+        token=csrf_token_from_wikidata,
+        data=json.dumps(data)
+    )
 
 # We can optionally pass it an item to avoid making an extra API call.
-def get_wikidata_item(session, item_id: int, item = None) -> str | None:
+def get_wikidata_item(session: mwapi.Session, item_id: int, item = None) -> str | None:
     if item != None:
         return item
     return glom(session.get(action='wbgetentities', ids=f'Q{item_id}'), f'entities.Q{item_id}', default=None)
@@ -162,8 +224,8 @@ def get_wikidata_instance_of(session, item_id: int, item) -> list[int] | None:
 
     return list(map(lambda x: glom(x, 'mainsnak.datavalue.value.numeric-id', default=None), instances_of))
 
-def get_wikidata_item_name(session, item_id: int, lang: str = 'en') -> str | None:
-    return glom(get_wikidata_item(session, item_id), f'labels.{lang}.value', default=None)
+def get_wikidata_item_name(session: mwapi.Session, item_id: int, lang: str = 'en', item = None) -> str | None:
+    return glom(get_wikidata_item(session, item_id, item), f'labels.{lang}.value', default=None)
 
 def check_if_item_has_property(session, item_id: int, property_id: int, item = None) -> bool:
     return glom(
@@ -253,6 +315,7 @@ def album_post(item_id: int) -> RRV:
 
     # Split the tracklist into a list and create the tracklist items.
     create_tracklist_items(
+        session,
         [track.strip() for track in tracklist.splitlines()],
         performer_qid,
         include_track_numbers
