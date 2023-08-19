@@ -21,6 +21,13 @@
   {{ ','.join(errors) }}
 </div>
 {% else %}
+
+{% if warnings|length != 0 %}
+<div class="alert alert-warning">
+  {{ ','.join(warnings) }}
+</div>
+{% endif %}
+
 <form action="{{ url_for('album_post', item_id=item_id) }}" method="POST">
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
 

@@ -23,6 +23,10 @@ user_agent = toolforge.set_user_agent(
     email='connor.james.shea+wikidata@gmail.com')
 
 TEST_WIKIDATA = True
+INSTANCE_OF_PROPERTY = 'P82' if TEST_WIKIDATA else 'P31'
+PERFORMER_PROPERTY = 'P97837' if TEST_WIKIDATA else 'P175'
+TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
+ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
 
 @decorator.decorator
 def read_private(func, *args, **kwargs):
@@ -136,19 +140,37 @@ def authenticated_session() -> Optional[mwapi.Session]:
                          user_agent=user_agent)
 
 # TODO: Add a function to create the tracklist items.
-def create_tracklist_items(tracklist: str, performer_qid: str, include_track_numbers: bool) -> None:
+def create_tracklist_items(tracklist: str, performer_qid: int | None, include_track_numbers: bool) -> None:
     print(tracklist)
     return None
 
-PERFORMER_PROPERTY = 'P97837' if TEST_WIKIDATA else 'P175'
-TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
-
-def get_wikidata_item(session, item_id) -> str | None:
+# We can optionally pass it an item to avoid making an extra API call.
+def get_wikidata_item(session, item_id: int, item = None) -> str | None:
+    if item != None:
+        return item
     return glom(session.get(action='wbgetentities', ids=f'Q{item_id}'), f'entities.Q{item_id}', default=None)
 
-def get_wikidata_item_name(session, item_id, lang: str = 'en') -> str | None:
+def get_wikidata_instance_of(session, item_id: int, item) -> list[int] | None:
+    instances_of = glom(
+        get_wikidata_item(session, item_id, item),
+        f'claims.{INSTANCE_OF_PROPERTY}',
+        default=None
+    )
+
+    if instances_of == None:
+        return instances_of
+
+    return list(map(lambda x: glom(x, 'mainsnak.datavalue.value.numeric-id', default=None), instances_of))
+
+def get_wikidata_item_name(session, item_id: int, lang: str = 'en') -> str | None:
     return glom(get_wikidata_item(session, item_id), f'labels.{lang}.value', default=None)
 
+def check_if_item_has_property(session, item_id: int, property_id: int, item = None) -> bool:
+    return glom(
+        get_wikidata_item(session, item_id, item),
+        f'claims.P{property_id}',
+        default=None
+    ) != None
 
 @app.route('/')
 def index() -> RRV:
@@ -178,7 +200,16 @@ def album_get(item_id: int) -> RRV:
     performer_item_id = glom(item_entity, Path('claims', PERFORMER_PROPERTY, 0, 'mainsnak', 'datavalue', 'value', 'numeric-id'), default=None)
     performer_name = None if performer_item_id == None else get_wikidata_item_name(session, performer_item_id, 'en')
 
-    # TODO: Add checks for whether the item is an album and whether it already has a tracklist
+    # Add a warning if it already has a tracklist
+    if check_if_item_has_property(session, item_id, TRACKLIST_PROPERTY[1:], item_entity) == True:
+        warnings.append(f'Item Q{item_id} already has a tracklist.')
+
+    # Add a warning if it isn't an album
+    item_instance_of = get_wikidata_instance_of(session, item_id, item_entity)
+    if item_instance_of == None:
+        warnings.append(f'Item Q{item_id} has no "instance of" set.')
+    elif int(ALBUM_ITEM[1:]) not in item_instance_of:
+        warnings.append(f'Item Q{item_id} is not an album.')
 
     return flask.render_template('album.html',
                                  item_id=item_id,
@@ -208,7 +239,8 @@ def album_post(item_id: int) -> RRV:
         return flask.render_template('album.html',
                                      item_id=item_id,
                                      csrf_error=csrf_error,
-                                     errors=None)
+                                     errors=None,
+                                     warnings=[])
 
     session = authenticated_session()
 
@@ -222,7 +254,8 @@ def album_post(item_id: int) -> RRV:
     return flask.render_template('album.html',
                                  item_id=item_id,
                                  csrf_error=csrf_error,
-                                 errors=None)
+                                 errors=None,
+                                 warnings=[])
 
 
 @app.route('/login')
