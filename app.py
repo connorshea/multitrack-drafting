@@ -14,7 +14,7 @@ import string
 import toolforge
 from typing import Optional, Tuple
 import yaml
-
+from glom import glom
 
 app = flask.Flask(__name__)
 
@@ -54,7 +54,7 @@ if 'OAUTH' in app.config:
     oauth_config = app.config['OAUTH']
     consumer_token = mwoauth.ConsumerToken(oauth_config['consumer_key'],
                                            oauth_config['consumer_secret'])
-    index_php = 'https://www.wikidata.org/w/index.php'
+    index_php = 'https://test.wikidata.org/w/index.php'
 
 
 @app.template_global()
@@ -126,7 +126,7 @@ def authenticated_session() -> Optional[mwapi.Session]:
                                     client_secret=consumer_token.secret,
                                     resource_owner_key=access_token.key,
                                     resource_owner_secret=access_token.secret)
-    return mwapi.Session(host='https://www.wikidata.org',
+    return mwapi.Session(host='https://test.wikidata.org',
                          auth=auth,
                          user_agent=user_agent)
 
@@ -138,8 +138,17 @@ def index() -> RRV:
 
 @app.get('/album/Q<item_id>')
 def album_get(item_id: int) -> RRV:
-    # TODO: fetch item from Wikidata
-    item_name = 'Abbey Road' or 'No English title on Wikidata'
+    session = authenticated_session()
+    if session is None:
+        # Bail out early if we aren’t logged in.
+        return flask.redirect(flask.url_for('login'))
+
+    # fetch item from Wikidata
+    item_entity = session.get(action='wbgetentities', ids=f'Q{item_id}')
+    item_name = glom(item_entity, f'entities.Q{item_id}.labels.en.value') or 'No English title on Wikidata'
+
+    # TODO: Add checks for whether the item is an album and whether it has a tracklist
+
     return flask.render_template('album.html',
                                  item_id=item_id,
                                  item_name=item_name)
@@ -166,6 +175,10 @@ def album_post(item_id: int) -> RRV:
                                      csrf_error=csrf_error)
 
     session = authenticated_session()
+
+    if session is None:
+        # Bail out early if we aren’t logged in.
+        return flask.redirect(flask.url_for('login'))
 
     return flask.render_template('album.html',
                                  item_id=item_id,

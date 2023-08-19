@@ -10,3 +10,4 @@ requests_oauthlib
 toolforge
 types-decorator
 types-PyYAML
+glom
