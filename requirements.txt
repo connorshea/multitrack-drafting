@@ -1,0 +1,12 @@
+decorator
+flask >= 2.0.0
+MarkupSafe
+mwapi
+mwoauth
+pytest
+mypy
+PyYAML
+requests_oauthlib
+toolforge
+types-decorator
+types-PyYAML
