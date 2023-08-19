@@ -146,11 +146,29 @@ def create_tracklist_items(session: mwapi.Session, tracklist: list[str], perform
     track_item_ids = []
     for track in tracklist:
         # Create track item.
-        create_wikidata_item(session, track, performer_qid)
-        track_item = {}
-        track_item_ids.append(track_item['id'])
+        track_item = create_wikidata_item(session, track, performer_qid)
+        track_item_ids.append(int(track_item['entity']['id'][1:]))
 
     return track_item_ids
+
+def generate_wikidata_claim_object(property_id: str, item_id: str) -> dict:
+    return {
+        'mainsnak': {
+            'snaktype': 'value',
+            'property': property_id,
+            'datatype': 'wikibase-item',
+            'datavalue': {
+                'value': {
+                    'entity-type': 'wikibase-item',
+                    'numeric-id': int(item_id[1:]),
+                    'id': item_id
+                },
+                'type': 'wikibase-entityid'
+            }
+        },
+        'type': 'statement',
+        'rank': 'normal'
+    }
 
 def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int | None):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
@@ -173,33 +191,21 @@ def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int 
                 'language': 'en', 'value': item_description
             }
         ],
-        'claims': [
-            {
-                'mainsnak': {
-                    'snaktype': 'value',
-                    'property': INSTANCE_OF_PROPERTY,
-                    'datatype': 'wikibase-item',
-                    'datavalue': {
-                        'value': {
-                            'entity-type': 'wikibase-item',
-                            'numeric-id': int(SONG_ITEM[1:]),
-                            'id': SONG_ITEM
-                        },
-                        'type': 'wikibase-entityid'
-                    }
-                },
-                'type': 'statement',
-                'rank': 'normal'
-            }
-        ]
+        'claims': []
     }
+
+    # Add an instance of song claim.
+    data['claims'].append(
+        generate_wikidata_claim_object(INSTANCE_OF_PROPERTY, SONG_ITEM)
+    )
     
     # If we have a performer, add it to the data.
-    # if performer_qid != None:
-    #     data['claims'].append({})
+    if performer_qid != None:
+        data['claims'].append(
+            generate_wikidata_claim_object(PERFORMER_PROPERTY, f'Q{performer_qid}')
+        )
 
-    print(data)
-    session.post(
+    return session.post(
         action='wbeditentity',
         new='item',
         token=csrf_token_from_wikidata,
@@ -314,7 +320,7 @@ def album_post(item_id: int) -> RRV:
                                      warnings=[])
 
     # Split the tracklist into a list and create the tracklist items.
-    create_tracklist_items(
+    track_ids = create_tracklist_items(
         session,
         [track.strip() for track in tracklist.splitlines()],
         performer_qid,
