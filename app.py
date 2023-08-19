@@ -151,11 +151,19 @@ def authenticated_session() -> Optional[mwapi.Session]:
                          user_agent=user_agent)
 
 # Create the tracklist items and return the newly-created item IDs.
-def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, language: str, track_type: str) -> list[int]:
+def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, language: str, track_type: str, track_description_language: str, track_description: str) -> list[int]:
     track_item_ids = []
     for track in tracklist:
         # Create track item.
-        track_item = create_wikidata_item(session, track, performer_qid, language, track_type)
+        track_item = create_wikidata_track_item(
+            session,
+            track,
+            performer_qid,
+            language,
+            track_type,
+            track_description_language,
+            track_description
+        )
         track_item_ids.append(int(track_item['entity']['id'][1:]))
 
     return track_item_ids
@@ -179,15 +187,16 @@ def generate_wikidata_claim_object(property_id: str, item_id: str) -> dict:
         'rank': 'normal'
     }
 
-def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int | None, language: str, track_type: str):
+def create_wikidata_track_item(
+        session: mwapi.Session,
+        label: str,
+        performer_qid: int | None,
+        language: str,
+        track_type: str,
+        track_description_language: str,
+        track_description: str
+    ):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
-    item_description = 'song'
-
-    # If we have a performer, add them to the description.
-    if performer_qid != None:
-        performer_name = get_wikidata_item_name(session, performer_qid, 'en')
-        if performer_name != None:
-            item_description = f'song by {performer_name}'
 
     data = {
         'labels': [
@@ -197,8 +206,7 @@ def create_wikidata_item(session: mwapi.Session, label: str, performer_qid: int 
         ],
         'descriptions': [
             {
-                # Don't set the language code to anything else here because this description is only valid in English.
-                'language': 'en', 'value': item_description
+                'language': track_description_language, 'value': track_description
             }
         ],
         'claims': []
@@ -349,6 +357,8 @@ def album_post(item_id: int) -> RRV:
     csrf_error = False
     if submitted_request_valid():
         track_type = flask.request.form.get('track_type')
+        track_description_language = flask.request.form.get('track_description_language')
+        track_description = flask.request.form.get('track_description')
         tracklist = flask.request.form.get('tracklist')
         performer_qid = flask.request.form.get('performer_qid')
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
@@ -383,7 +393,9 @@ def album_post(item_id: int) -> RRV:
         [track.strip() for track in tracklist.splitlines()],
         performer_qid,
         language,
-        track_type
+        track_type,
+        track_description_language,
+        track_description
     )
 
     add_tracklist_to_album_item(session, item_id, track_ids, include_track_numbers)
