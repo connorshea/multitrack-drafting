@@ -12,6 +12,12 @@
   Please try submitting the form again.
 </div>
 {% endif %}
+
+{% if errors != None %}
+<div class="alert alert-danger">
+  {{ ','.join(errors) }}
+</div>
+{% else %}
 <form action="{{ url_for('album_post', item_id=item_id) }}" method="POST">
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
 
@@ -37,4 +43,6 @@
   </div>
   <button type="submit" class="btn btn-primary">Create tracklist</button>
 </form>
+{% endif %}
+
 {% endblock %}

@@ -145,13 +145,22 @@ def album_get(item_id: int) -> RRV:
 
     # fetch item from Wikidata
     item_entity = session.get(action='wbgetentities', ids=f'Q{item_id}')
-    item_name = glom(item_entity, f'entities.Q{item_id}.labels.en.value') or 'No English title on Wikidata'
+    # Handle the case where the item doesn't exist on Wikidata.
+    item_missing = glom(item_entity, f'entities.Q{item_id}.missing', default=None)
+    if item_missing != None:
+        return flask.render_template('album.html',
+                                     item_id=item_id,
+                                     item_name='No English title on Wikidata',
+                                     errors=[f'Item Q{item_id} does not exist on Wikidata'])
+
+    item_name = glom(item_entity, f'entities.Q{item_id}.labels.en.value', default='No English title on Wikidata')
 
     # TODO: Add checks for whether the item is an album and whether it has a tracklist
 
     return flask.render_template('album.html',
                                  item_id=item_id,
-                                 item_name=item_name)
+                                 item_name=item_name,
+                                 errors=None)
 
 
 @app.post('/album/Q<item_id>')
@@ -172,7 +181,8 @@ def album_post(item_id: int) -> RRV:
         # Bail out early if we hit a CSRF error.
         return flask.render_template('album.html',
                                      item_id=item_id,
-                                     csrf_error=csrf_error)
+                                     csrf_error=csrf_error,
+                                     errors=None)
 
     session = authenticated_session()
 
@@ -182,7 +192,8 @@ def album_post(item_id: int) -> RRV:
 
     return flask.render_template('album.html',
                                  item_id=item_id,
-                                 csrf_error=csrf_error)
+                                 csrf_error=csrf_error,
+                                 errors=None)
 
 
 @app.route('/login')
