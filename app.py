@@ -139,8 +139,8 @@ def authenticated_session() -> Optional[mwapi.Session]:
                          auth=auth,
                          user_agent=user_agent)
 
-# TODO: Add a function to create the tracklist items.
-def create_tracklist_items(tracklist: str, performer_qid: int | None, include_track_numbers: bool) -> None:
+# TODO: Actually create the tracklist items.
+def create_tracklist_items(tracklist: list[str], performer_qid: int | None, include_track_numbers: bool) -> None:
     print(tracklist)
     return None
 
@@ -202,14 +202,14 @@ def album_get(item_id: int) -> RRV:
 
     # Add a warning if it already has a tracklist
     if check_if_item_has_property(session, item_id, TRACKLIST_PROPERTY[1:], item_entity) == True:
-        warnings.append(f'Item Q{item_id} already has a tracklist.')
+        warnings.append(f'Item Q{item_id} already has a tracklist')
 
     # Add a warning if it isn't an album
     item_instance_of = get_wikidata_instance_of(session, item_id, item_entity)
     if item_instance_of == None:
-        warnings.append(f'Item Q{item_id} has no "instance of" set.')
+        warnings.append(f'Item Q{item_id} has no "instance of" set')
     elif int(ALBUM_ITEM[1:]) not in item_instance_of:
-        warnings.append(f'Item Q{item_id} is not an album.')
+        warnings.append(f'Item Q{item_id} is not an album')
 
     return flask.render_template('album.html',
                                  item_id=item_id,
@@ -227,11 +227,6 @@ def album_post(item_id: int) -> RRV:
         tracklist = flask.request.form.get('tracklist')
         performer_qid = flask.request.form.get('performer_qid')
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
-
-        print(item_id)
-        print(tracklist)
-        print(performer_qid)
-        print(include_track_numbers)
     else:
         csrf_error = True
         flask.g.repeat_form = True
@@ -248,7 +243,20 @@ def album_post(item_id: int) -> RRV:
         # Bail out early if we aren’t logged in.
         return flask.redirect(flask.url_for('login'))
 
-    create_tracklist_items(tracklist, performer_qid, include_track_numbers)
+    if tracklist.isspace():
+        # Bail out early if we don't have a tracklist.
+        return flask.render_template('album.html',
+                                     item_id=item_id,
+                                     csrf_error=csrf_error,
+                                     errors=['No tracklist provided'],
+                                     warnings=[])
+
+    # Split the tracklist into a list and create the tracklist items.
+    create_tracklist_items(
+        [track.strip() for track in tracklist.splitlines()],
+        performer_qid,
+        include_track_numbers
+    )
 
     # TODO: Figure out the best way to render this without losing the item_name we pulled from Wikidata, and any other checks.
     return flask.render_template('album.html',
