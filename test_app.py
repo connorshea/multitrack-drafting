@@ -172,16 +172,117 @@ def test_tracklist_with_long_track_name_post_album(client):
     referrer = multitrack_drafting.full_url('album_get', item_id=123)
 
     # A track name with more than 250 characters will not be accepted.
-    tracklist = 'Foo\nBarrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr'
+    tracklist = f'Foo\nBa{"r" * 249}'
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist=tracklist
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'A track name cannot be longer than 250 characters.' in html
+
+def test_empty_tracklist_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist=''
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'No tracklist provided.' in html
+
+def test_tracklist_with_only_spaces_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist='     \n   '
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'No tracklist provided.' in html
+
+def test_tracklist_with_dupes_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist='Foo\nBar\nFoo'
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'Tracklist cannot have duplicate track names.' in html
+
+def test_blank_track_description_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    tracklist='Foo\nBar'
     # Post the tracklist.
     response = post_album_helper(
         client=client,
         csrf_token=csrf_token,
         referrer=referrer,
         tracklist=tracklist,
-        track_description='song by Carly Rae Jepsen',
+        track_description='',
     )
 
     html = response.get_data(as_text=True)
     assert 'Successfully created track items and tracklist.' not in html
-    assert 'A track name cannot be longer than 250 characters.' in html
+    assert 'No track description provided.' in html
+
+def test_track_description_with_only_spaces_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    tracklist='Foo\nBar'
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist=tracklist,
+        track_description='      ',
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'No track description provided.' in html
+
+def test_track_description_that_is_too_long_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    tracklist='Foo\nBar'
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist=tracklist,
+        track_description='a' * 251,
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'Track description cannot be longer than 250 characters.' in html

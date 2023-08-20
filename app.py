@@ -458,7 +458,7 @@ def album_post(item_id: int) -> RRV:
         flask.flash('Track description cannot be longer than 250 characters.', 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
-    if tracklist.isspace():
+    if tracklist.isspace() or tracklist == '':
         # Bail out early if we don't have a tracklist.
         flask.flash('No tracklist provided.', 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
