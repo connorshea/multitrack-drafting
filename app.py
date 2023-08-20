@@ -241,19 +241,19 @@ def create_wikidata_track_item(
     )
     
     # If we have a performer, add it to the data.
-    if performer_qid != None:
+    if performer_qid != None and performer_qid != '':
         data['claims'].append(
             generate_wikidata_claim_object(PERFORMER_PROPERTY, f'Q{performer_qid}')
         )
 
     # If we have a recording location, add it to the data.
-    if performer_qid != None:
+    if recorded_at_qid != None and recorded_at_qid != '':
         data['claims'].append(
             generate_wikidata_claim_object(RECORDED_AT_PROPERTY, f'Q{recorded_at_qid}')
         )
 
     # If we have a producer, add it to the data.
-    if performer_qid != None:
+    if producer_qid != None and producer_qid != '':
         data['claims'].append(
             generate_wikidata_claim_object(PRODUCER_PROPERTY, f'Q{producer_qid}')
         )
