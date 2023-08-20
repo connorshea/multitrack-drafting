@@ -420,6 +420,7 @@ def album_get(item_id: int) -> RRV:
                                  performer_name=performer_name,
                                  warnings=warnings)
 
+# A post endpoint to redirect the user to the relevant album page.
 @app.post('/album/redirect')
 def album_redirect() -> RRV:
     session = authenticated_session()
