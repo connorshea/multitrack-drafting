@@ -91,6 +91,26 @@
     <small id="performerHelp" class="form-text text-muted">Just the numeric ID. If left empty, no performer will be added to track items.</small>
   </div>
 
+  <div class="form-group mb-3">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="recorded_at">Recorded at studio or venue QID</span>
+      </div>
+      <input type="text" class="form-control" id="recorded-at-qid" name="recorded_at_qid" aria-describedby="recorded_at">
+    </div>
+    <small id="recordedAtHelp" class="form-text text-muted">Just the numeric ID. If left empty, no recording location will be added to track items.</small>
+  </div>
+
+  <div class="form-group mb-3">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="producer">Producer QID</span>
+      </div>
+      <input type="text" class="form-control" id="producer-qid" name="producer_qid" aria-describedby="producer">
+    </div>
+    <small id="producerHelp" class="form-text text-muted">Just the numeric ID. If left empty, no producer will be added to track items.</small>
+  </div>
+
   <div class="form-group">
     <!-- TODO: Eventually use mul for labels and remove the language selector entirely? -->
     <label for="lang">Label language</label>

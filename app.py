@@ -26,6 +26,8 @@ user_agent = toolforge.set_user_agent(
 TEST_WIKIDATA = True
 INSTANCE_OF_PROPERTY = 'P82' if TEST_WIKIDATA else 'P31'
 PERFORMER_PROPERTY = 'P97837' if TEST_WIKIDATA else 'P175'
+RECORDED_AT_PROPERTY = 'P97839' if TEST_WIKIDATA else 'P483'
+PRODUCER_PROPERTY = 'P97838' if TEST_WIKIDATA else 'P162'
 TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
 SERIES_ORDINAL_PROPERTY = 'P551' if TEST_WIKIDATA else 'P1545'
 ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
@@ -158,6 +160,8 @@ def create_tracklist_items(
         session: mwapi.Session,
         tracklist: list[str],
         performer_qid: int | None,
+        recorded_at_qid: int | None,
+        producer_qid: int | None,
         language: str,
         track_type: str,
         track_description_language: str,
@@ -169,13 +173,15 @@ def create_tracklist_items(
         # Create track item.
         track_item = create_wikidata_track_item(
             session,
-            track,
-            performer_qid,
-            language,
-            track_type,
-            track_description_language,
-            track_description,
-            edit_group_id
+            label=track,
+            performer_qid=performer_qid,
+            recorded_at_qid=recorded_at_qid,
+            producer_qid=producer_qid,
+            language=language,
+            track_type=track_type,
+            track_description_language=track_description_language,
+            track_description=track_description,
+            edit_group_id=edit_group_id
         )
         track_item_ids.append(int(track_item['entity']['id'][1:]))
 
@@ -205,6 +211,8 @@ def create_wikidata_track_item(
         session: mwapi.Session,
         label: str,
         performer_qid: int | None,
+        recorded_at_qid: int | None,
+        producer_qid: int | None,
         language: str,
         track_type: str,
         track_description_language: str,
@@ -236,6 +244,18 @@ def create_wikidata_track_item(
     if performer_qid != None:
         data['claims'].append(
             generate_wikidata_claim_object(PERFORMER_PROPERTY, f'Q{performer_qid}')
+        )
+
+    # If we have a recording location, add it to the data.
+    if performer_qid != None:
+        data['claims'].append(
+            generate_wikidata_claim_object(RECORDED_AT_PROPERTY, f'Q{recorded_at_qid}')
+        )
+
+    # If we have a producer, add it to the data.
+    if performer_qid != None:
+        data['claims'].append(
+            generate_wikidata_claim_object(PRODUCER_PROPERTY, f'Q{producer_qid}')
         )
 
     return session.post(
@@ -385,6 +405,8 @@ def album_post(item_id: int) -> RRV:
         track_description = flask.request.form.get('track_description')
         tracklist = flask.request.form.get('tracklist')
         performer_qid = flask.request.form.get('performer_qid')
+        recorded_at_qid = flask.request.form.get('recorded_at_qid')
+        producer_qid = flask.request.form.get('producer_qid')
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
         language = flask.request.form.get('language')
     else:
@@ -446,6 +468,8 @@ def album_post(item_id: int) -> RRV:
         session,
         tracklist=clean_tracklist,
         performer_qid=performer_qid,
+        recorded_at_qid=recorded_at_qid,
+        producer_qid=producer_qid,
         language=language,
         track_type=track_type,
         track_description_language=track_description_language,
