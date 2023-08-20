@@ -406,6 +406,11 @@ def album_post(item_id: int) -> RRV:
             flask.flash('A track name cannot be longer than 250 characters.', 'danger')
             return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
+    # Validate that there are no duplicates in the tracklist.
+    if len(clean_tracklist) != len(set(clean_tracklist)):
+        flask.flash('Tracklist cannot have duplicate track names.', 'danger')
+        return flask.redirect(flask.url_for('album_get', item_id=item_id))
+
     # Create the tracklist items.
     track_ids = create_tracklist_items(
         session,
