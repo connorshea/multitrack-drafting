@@ -306,12 +306,12 @@ def test_track_description_that_is_too_long_post_album(client):
 
 def test_tracklist_parser():
     # Test case 1: valid input with all fields
-    input_str = "Warm Blood|4:13|1234\nLove Again|3:37|1235\nFavourite Colour|3:30|1236\nWhen I Needed You|3:41|1237\n"
+    input_str = "Warm Blood|4:13|USUM71507033\nLove Again|3:37|USUM71507038\nFavourite Colour|3:30|USUM71507036\nWhen I Needed You|3:41|USUM71507034\n"
     expected_output = [
-        {"name": "Warm Blood", "duration": 253, "isrc_id": "1234"},
-        {"name": "Love Again", "duration": 217, "isrc_id": "1235"},
-        {"name": "Favourite Colour", "duration": 210, "isrc_id": "1236"},
-        {"name": "When I Needed You", "duration": 221, "isrc_id": "1237"}
+        {"name": "Warm Blood", "duration": 253, "isrc_id": "USUM71507033"},
+        {"name": "Love Again", "duration": 217, "isrc_id": "USUM71507038"},
+        {"name": "Favourite Colour", "duration": 210, "isrc_id": "USUM71507036"},
+        {"name": "When I Needed You", "duration": 221, "isrc_id": "USUM71507034"}
     ]
     assert multitrack_drafting.tracklist_parser(input_str) == expected_output
 
@@ -326,21 +326,21 @@ def test_tracklist_parser():
     assert multitrack_drafting.tracklist_parser(input_str) == expected_output
 
     # Test case 3: valid input with missing name
-    input_str = "|4:13|1234\nLove Again|3:37|1235\nFavourite Colour|3:30|1236\nWhen I Needed You|3:41|1237\n"
+    input_str = "|4:13|1234\nLove Again|3:37|USUM71507038\nFavourite Colour|3:30|USUM71507036\nWhen I Needed You|3:41|USUM71507034\n"
     expected_output = [
-        {"name": "Love Again", "duration": 217, "isrc_id": "1235"},
-        {"name": "Favourite Colour", "duration": 210, "isrc_id": "1236"},
-        {"name": "When I Needed You", "duration": 221, "isrc_id": "1237"}
+        {"name": "Love Again", "duration": 217, "isrc_id": "USUM71507038"},
+        {"name": "Favourite Colour", "duration": 210, "isrc_id": "USUM71507036"},
+        {"name": "When I Needed You", "duration": 221, "isrc_id": "USUM71507034"}
     ]
     assert multitrack_drafting.tracklist_parser(input_str) == expected_output
 
     # Test case 4: valid input with empty lines
-    input_str = "Warm Blood|4:13|1234\n\nLove Again|3:37|1235\n\nFavourite Colour|3:30|1236\n\nWhen I Needed You|3:41|1237\n\n"
+    input_str = "Warm Blood|4:13|USUM71507033\n\nLove Again|3:37|USUM71507038\n\nFavourite Colour|3:30|USUM71507036\n\nWhen I Needed You|3:41|USUM71507034\n\n"
     expected_output = [
-        {"name": "Warm Blood", "duration": 253, "isrc_id": "1234"},
-        {"name": "Love Again", "duration": 217, "isrc_id": "1235"},
-        {"name": "Favourite Colour", "duration": 210, "isrc_id": "1236"},
-        {"name": "When I Needed You", "duration": 221, "isrc_id": "1237"}
+        {"name": "Warm Blood", "duration": 253, "isrc_id": "USUM71507033"},
+        {"name": "Love Again", "duration": 217, "isrc_id": "USUM71507038"},
+        {"name": "Favourite Colour", "duration": 210, "isrc_id": "USUM71507036"},
+        {"name": "When I Needed You", "duration": 221, "isrc_id": "USUM71507034"}
     ]
     assert multitrack_drafting.tracklist_parser(input_str) == expected_output
 
