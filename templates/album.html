@@ -2,7 +2,7 @@
 {% block main %}
 <div class="mt-4">
   <h1>Add tracks to {{ wikidata_link(item_id) }}</h1>
-  <h3>{{ item_name }}</h3>
+  <h3 class="album-name">{{ item_name }}</h3>
   {% if performer_name != None %}
     <h4>Performer: {{ performer_name }} ({{ wikidata_link(performer_item_id) }})</h4>
   {% endif %}

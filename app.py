@@ -326,7 +326,7 @@ def add_tracklist_to_album_item(
                             'property': SERIES_ORDINAL_PROPERTY,
                             'datatype': 'string',
                             'datavalue': {
-                                'value': str(i + 1), # TODO: use '01' when we have more than 9 tracks?
+                                'value': str(i + 1),
                                 'type': 'string'
                             }
                         }

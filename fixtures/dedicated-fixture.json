@@ -1,0 +1,68 @@
+{
+    "entities": {
+        "Q123": {
+            "title": "Q123",
+            "type": "item",
+            "id": "Q123",
+            "labels": {
+                "en": {
+                    "language": "en",
+                    "value": "Dedicated"
+                }
+            },
+            "descriptions": {
+                "en": {
+                    "language": "en",
+                    "value": "studio album by Carly Rae Jepsen"
+                }
+            },
+            "aliases": {},
+            "claims": {
+                "P97837": [
+                    {
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "property": "P97837",
+                            "hash": "7ab2ecb7e61dd5109139642255d403a0339ee6a6",
+                            "datavalue": {
+                                "value": {
+                                    "entity-type": "item",
+                                    "numeric-id": 232027,
+                                    "id": "Q232027"
+                                },
+                                "type": "wikibase-entityid"
+                            },
+                            "datatype": "wikibase-item"
+                        },
+                        "type": "statement",
+                        "id": "Q232026$3441ddfe-49ae-3d40-8b08-b46061846cb9",
+                        "rank": "normal"
+                    }
+                ],
+                "P82": [
+                    {
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "property": "P82",
+                            "hash": "4cf2f28d6d46213619b5ee648d7c1c9f8ffea29a",
+                            "datavalue": {
+                                "value": {
+                                    "entity-type": "item",
+                                    "numeric-id": 1785,
+                                    "id": "Q1785"
+                                },
+                                "type": "wikibase-entityid"
+                            },
+                            "datatype": "wikibase-item"
+                        },
+                        "type": "statement",
+                        "id": "Q232026$c555f91d-4b5f-31d3-f7dc-4fd50ffaa12d",
+                        "rank": "normal"
+                    }
+                ]
+            },
+            "sitelinks": {}
+        }
+    },
+    "success": 1
+}
