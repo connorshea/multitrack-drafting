@@ -341,9 +341,9 @@ def album_get(item_id: int) -> RRV:
     # Add a warning if it isn't an album
     item_instance_of = get_wikidata_instance_of(session, item_id, item_entity)
     if item_instance_of == None:
-        warnings.append(f'Item Q{item_id} has no "instance of" set')
+        warnings.append(f'Item Q{item_id} has no "instance of" set and may not be an album.')
     elif int(ALBUM_ITEM[1:]) not in item_instance_of:
-        warnings.append(f'Item Q{item_id} is not an album')
+        warnings.append(f'Item Q{item_id} is not an album.')
 
     return flask.render_template('album.html',
                                  item_id=item_id,
