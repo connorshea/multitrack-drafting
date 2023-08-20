@@ -1,24 +1,14 @@
 {% extends "base.html" %}
 {% block main %}
 <h1>Multitrack Drafting</h1>
-<p>
-  <strong>Congratulations!</strong>
-  You’ve started creating a new tool – that’s awesome!
-</p>
-<h2>Guide to this tool</h2>
-<p>
-  You’ll want to replace a lot of the code that this template generated for you,
-  since it’s mainly for demonstration purposes.
-  Here’s what the different parts demonstrate:
-</p>
+<div class="mx-auto" style="width: 60%;">
+  <img
+    src="https://i.kym-cdn.com/photos/images/original/000/010/773/DenshaDeD_ch01p16-17.png"
+    width="100%"
+    alt="An image from a parody manga which features two panels. The top panel is a train car riding on two tracks simultaneously. The bottom panel is a close-up on a surprised man's face, with sweat dripping down it. A text bubble next to the man's face says 'Multi-track drifting!!'."
+    />
+</div>
 <ul>
-  <li>
-    <p>
-      <a href="{{ url_for('index') }}">This index page</a> is almost completely static.
-      The only interesting part is how the hyperlinks in this list are generated –
-      check out the template source code (<code>templates/index.html</code>) for that.
-    </p>
-  </li>
   <li>
     <p>
       Example tracks:
@@ -28,30 +18,7 @@
       </ul>
     </p>
   </li>
-  
-  <li>
-    <p>
-      <code>test_app.py</code> is not part of the tool itself,
-      but contains several unit tests for it,
-      written using the <a href="https://docs.pytest.org/en/latest/">pytest</a> framework.
-      You can add your own tests here,
-      and run them using the <code><kbd>pytest</kbd></code> command.
-    </p>
-  </li>
-  
 </ul>
-<p>
-  Feel free to rip whatever code you want from these pages
-  and rearrange it as fits your tool,
-  then throw away everything else that you don’t need.
-</p>
-
-<p>
-  Automated checks for this tool have been set up in the <code>Makefile</code>.
-  You can run them using the command <code><kbd>make check</kbd></code>
-  (or just <code><kbd>make</kbd></code>)
-  in the source code directory (where <code>app.py</code> and <code>requirements.txt</code> are).
-</p>
 
 <h2>Next steps</h2>
 <p>Here are some next steps you might want to do.</p>
