@@ -31,11 +31,15 @@ RECORDED_AT_PROPERTY = 'P97839' if TEST_WIKIDATA else 'P483'
 PRODUCER_PROPERTY = 'P97838' if TEST_WIKIDATA else 'P162'
 TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
 SERIES_ORDINAL_PROPERTY = 'P551' if TEST_WIKIDATA else 'P1545'
+DURATION_PROPERTY = 'P374' if TEST_WIKIDATA else 'P2047'
 ISRC_PROPERTY = 'P97842' if TEST_WIKIDATA else 'P1243'
 ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
 SONG_ITEM = 'Q1811' if TEST_WIKIDATA else 'Q7366'
 AUDIO_TRACK_ITEM = 'Q232068' if TEST_WIKIDATA else 'Q7302866'
 MUSIC_TRACK_WITH_VOCALS_ITEM = 'Q232069' if TEST_WIKIDATA else 'Q55850593'
+
+# The unit to use with the duration property.
+SECONDS_UNIT = 'http://test.wikidata.org/entity/Q166170' if TEST_WIKIDATA else 'http://www.wikidata.org/entity/Q11574'
 
 TRACK_TYPES = {
     'song': SONG_ITEM,
@@ -169,7 +173,7 @@ def create_tracklist_items(
         track_description_language: str,
         track_description: str,
         edit_group_id: str
-    ) -> list[int]:
+    ) -> list[dict]:
     track_item_ids = []
     for track in tracklist:
         # Create track item.
@@ -183,9 +187,16 @@ def create_tracklist_items(
             track_type=track_type,
             track_description_language=track_description_language,
             track_description=track_description,
+            duration=track.get('duration'),
+            isrc_id=track.get('isrc_id'),
             edit_group_id=edit_group_id
         )
-        track_item_ids.append(int(track_item['entity']['id'][1:]))
+        track_item_dict = { 'wikidata_id': int(track_item['entity']['id'][1:]) }
+        if 'duration' in track:
+            track_item_dict['duration'] = track['duration']
+        if 'isrc_id' in track:
+            track_item_dict['isrc_id'] = track['isrc_id']
+        track_item_ids.append(track_item_dict)
 
     return track_item_ids
 
@@ -237,6 +248,8 @@ def create_wikidata_track_item(
         track_type: str,
         track_description_language: str,
         track_description: str,
+        duration: int | None,
+        isrc_id: str | None,
         edit_group_id: str
     ):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
@@ -265,7 +278,6 @@ def create_wikidata_track_item(
         generate_wikidata_monolingual_text_claim_object(TITLE_PROPERTY, language=language, string=title)
     )
 
-    
     # If we have a performer, add it to the data.
     if performer_qid != None and performer_qid != '':
         data['claims'].append(
@@ -284,6 +296,45 @@ def create_wikidata_track_item(
             generate_wikidata_claim_object(PRODUCER_PROPERTY, f'Q{producer_qid}')
         )
 
+    # If we have the duration, add it to the data.
+    if duration != None:
+        data['claims'].append(
+            {
+                'mainsnak': {
+                    'snaktype': 'value',
+                    'property': DURATION_PROPERTY,
+                    'datatype': 'quantity',
+                    'datavalue': {
+                        'value': {
+                            'amount': duration,
+                            'unit': SECONDS_UNIT
+                        },
+                        'type': 'quantity'
+                    }
+                },
+                'type': 'statement',
+                'rank': 'normal'
+            }
+        )
+    
+    # If we have an ISRC ID, add it to the data.
+    if isrc_id != None and isrc_id != '':
+        data['claims'].append(
+            {
+                'mainsnak': {
+                    'snaktype': 'value',
+                    'property': ISRC_PROPERTY,
+                    'datatype': 'external-id',
+                    'datavalue': {
+                        'value': isrc_id,
+                        'type': 'string'
+                    }
+                },
+                'type': 'statement',
+                'rank': 'normal'
+            }
+        )
+
     return session.post(
         action='wbeditentity',
         new='item',
@@ -295,47 +346,68 @@ def create_wikidata_track_item(
 def add_tracklist_to_album_item(
         session: mwapi.Session,
         item_id: int,
-        track_ids: list[int],
+        track_items: list[dict],
         include_track_numbers: bool,
         edit_group_id: str
     ):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
 
     # Add the tracklist claim.
-    data = {
-        'claims': [
-            {
-                'mainsnak': {
-                    'snaktype': 'value',
-                    'property': TRACKLIST_PROPERTY,
-                    'datatype': 'wikibase-item',
-                    'datavalue': {
-                        'value': {
-                            'entity-type': 'wikibase-item',
-                            'numeric-id': track_id,
-                            'id': f'Q{track_id}'
-                        },
-                        'type': 'wikibase-entityid'
-                    }
-                },
-                'type': 'statement',
-                'rank': 'normal',
-                'qualifiers': {} if include_track_numbers == False else {
-                    SERIES_ORDINAL_PROPERTY: [
-                        {
-                            'snaktype': 'value',
-                            'property': SERIES_ORDINAL_PROPERTY,
-                            'datatype': 'string',
-                            'datavalue': {
-                                'value': str(i + 1),
-                                'type': 'string'
-                            }
-                        }
-                    ]
+    data = { 'claims': [] }
+    for i, track_item in enumerate(track_items):
+        claim = {
+            'mainsnak': {
+                'snaktype': 'value',
+                'property': TRACKLIST_PROPERTY,
+                'datatype': 'wikibase-item',
+                'datavalue': {
+                    'value': {
+                        'entity-type': 'wikibase-item',
+                        'numeric-id': track_item['wikidata_id'],
+                        'id': f'Q{track_item["wikidata_id"]}'
+                    },
+                    'type': 'wikibase-entityid'
                 }
-            } for i, track_id in enumerate(track_ids)
-        ]
-    }
+            },
+            'type': 'statement',
+            'rank': 'normal',
+            'qualifiers': {}
+        }
+
+        if include_track_numbers == True:
+            claim['qualifiers'].update({
+                SERIES_ORDINAL_PROPERTY: [
+                    {
+                        'snaktype': 'value',
+                        'property': SERIES_ORDINAL_PROPERTY,
+                        'datatype': 'string',
+                        'datavalue': {
+                            'value': str(i + 1),
+                            'type': 'string'
+                        }
+                    }
+                ]
+            })
+
+        if 'duration' in track_item:
+            claim['qualifiers'].update({
+                DURATION_PROPERTY: [
+                    {
+                        'snaktype': 'value',
+                        'property': DURATION_PROPERTY,
+                        'datatype': 'quantity',
+                        'datavalue': {
+                            'value': {
+                                'amount': track_item['duration'],
+                                'unit': SECONDS_UNIT
+                            },
+                            'type': 'quantity'
+                        }
+                    }
+                ]
+            })
+
+        data['claims'].append(claim)
 
     return session.post(
         action='wbeditentity',
@@ -539,7 +611,7 @@ def album_post(item_id: int) -> RRV:
     edit_group_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
 
     # Create the tracklist items.
-    track_ids = create_tracklist_items(
+    track_items = create_tracklist_items(
         session,
         tracklist=clean_tracklist,
         performer_qid=performer_qid,
@@ -552,7 +624,7 @@ def album_post(item_id: int) -> RRV:
         edit_group_id=edit_group_id
     )
 
-    add_tracklist_to_album_item(session, item_id=item_id, track_ids=track_ids, include_track_numbers=include_track_numbers, edit_group_id=edit_group_id)
+    add_tracklist_to_album_item(session, item_id=item_id, track_items=track_items, include_track_numbers=include_track_numbers, edit_group_id=edit_group_id)
 
     # Provide a success message to confirm to the user that the records were created.
     flask.flash('Successfully created track items and tracklist.', 'success')
