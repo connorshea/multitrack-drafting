@@ -31,6 +31,7 @@ RECORDED_AT_PROPERTY = 'P97839' if TEST_WIKIDATA else 'P483'
 PRODUCER_PROPERTY = 'P97838' if TEST_WIKIDATA else 'P162'
 TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
 SERIES_ORDINAL_PROPERTY = 'P551' if TEST_WIKIDATA else 'P1545'
+ISRC_PROPERTY = 'P97842' if TEST_WIKIDATA else 'P1243'
 ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
 SONG_ITEM = 'Q1811' if TEST_WIKIDATA else 'Q7366'
 AUDIO_TRACK_ITEM = 'Q232068' if TEST_WIKIDATA else 'Q7302866'
@@ -159,7 +160,7 @@ def authenticated_session() -> Optional[mwapi.Session]:
 # Create the tracklist items and return the newly-created item IDs.
 def create_tracklist_items(
         session: mwapi.Session,
-        tracklist: list[str],
+        tracklist: list[dict],
         performer_qid: int | None,
         recorded_at_qid: int | None,
         producer_qid: int | None,
@@ -174,7 +175,7 @@ def create_tracklist_items(
         # Create track item.
         track_item = create_wikidata_track_item(
             session,
-            title=track,
+            title=track['name'],
             performer_qid=performer_qid,
             recorded_at_qid=recorded_at_qid,
             producer_qid=producer_qid,
@@ -372,6 +373,42 @@ def check_if_item_has_property(session, item_id: int, property_id: int, item = N
         default=None
     ) != None
 
+def tracklist_parser(tracklist: str) -> list[dict[str, str]]:
+    tracklist = tracklist.split("\n")
+    result = []
+    for track_parts in tracklist:
+        track_parts = track_parts.split("|")
+        if len(track_parts) == 3:
+            result.append({"name": track_parts[0].strip(), "duration": track_parts[1].strip(), "isrc_id": track_parts[2].strip()})
+        elif len(track_parts) == 2:
+            result.append({"name": track_parts[0].strip(), "duration": track_parts[1].strip()})
+        elif len(track_parts) == 1:
+            result.append({"name": track_parts[0].strip()})
+
+    # Remove any empty tracks.
+    result = [x for x in result if x["name"] != ""]
+
+    # Convert duration to seconds if duration is defined.
+    for track in result:
+        if "duration" in track:
+            track["duration"] = duration_to_seconds(track["duration"])
+
+    return result
+
+def duration_to_seconds(duration):
+    duration = duration.split(':')
+
+    # Raise a ValueError if any of the duration parts are a blank string, e.g. ':15' should be invalid.
+    if '' in duration:
+        raise ValueError('Invalid format')
+
+    if len(duration) == 2:
+        return int(duration[0]) * 60 + int(duration[1])
+    elif len(duration) == 3:
+        return int(duration[0]) * 3600 + int(duration[1]) * 60 + int(duration[2])
+    else:
+        raise ValueError('Invalid format')
+
 @app.route('/')
 def index() -> RRV:
     return flask.render_template('index.html')
@@ -478,10 +515,7 @@ def album_post(item_id: int) -> RRV:
         flask.flash('No tracklist provided.', 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
-    # Split the tracklist into a list and strip extra spaces from each track.
-    clean_tracklist = [track.strip() for track in tracklist.splitlines()]
-    # Remove empty lines.
-    clean_tracklist = list(filter(lambda x: x != '', clean_tracklist))
+    clean_tracklist = tracklist_parser(tracklist)
 
     # Validate that the tracklist doesn't have more than 50 items, and that
     # none of the tracks are longer than 250 characters (the label length
@@ -490,13 +524,14 @@ def album_post(item_id: int) -> RRV:
         flask.flash('Tracklist cannot have more than 50 tracks.', 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
-    for track in clean_tracklist:
+    track_names = [track['name'] for track in clean_tracklist]
+    for track in track_names:
         if len(track) > 250:
             flask.flash('A track name cannot be longer than 250 characters.', 'danger')
             return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
     # Validate that there are no duplicates in the tracklist.
-    if len(clean_tracklist) != len(set(clean_tracklist)):
+    if len(track_names) != len(set(track_names)):
         flask.flash('Tracklist cannot have duplicate track names.', 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
 

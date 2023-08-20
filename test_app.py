@@ -303,3 +303,95 @@ def test_track_description_that_is_too_long_post_album(client):
     html = response.get_data(as_text=True)
     assert 'Successfully created track items and tracklist.' not in html
     assert 'Track description cannot be longer than 250 characters.' in html
+
+def test_tracklist_parser():
+    # Test case 1: valid input with all fields
+    input_str = "Warm Blood|4:13|1234\nLove Again|3:37|1235\nFavourite Colour|3:30|1236\nWhen I Needed You|3:41|1237\n"
+    expected_output = [
+        {"name": "Warm Blood", "duration": 253, "isrc_id": "1234"},
+        {"name": "Love Again", "duration": 217, "isrc_id": "1235"},
+        {"name": "Favourite Colour", "duration": 210, "isrc_id": "1236"},
+        {"name": "When I Needed You", "duration": 221, "isrc_id": "1237"}
+    ]
+    assert multitrack_drafting.tracklist_parser(input_str) == expected_output
+
+    # Test case 2: valid input with missing fields
+    input_str = "Warm Blood|4:13\nLove Again|3:37\nFavourite Colour|3:30\nWhen I Needed You|3:41\n"
+    expected_output = [
+        {"name": "Warm Blood", "duration": 253},
+        {"name": "Love Again", "duration": 217},
+        {"name": "Favourite Colour", "duration": 210},
+        {"name": "When I Needed You", "duration": 221}
+    ]
+    assert multitrack_drafting.tracklist_parser(input_str) == expected_output
+
+    # Test case 3: valid input with missing name
+    input_str = "|4:13|1234\nLove Again|3:37|1235\nFavourite Colour|3:30|1236\nWhen I Needed You|3:41|1237\n"
+    expected_output = [
+        {"name": "Love Again", "duration": 217, "isrc_id": "1235"},
+        {"name": "Favourite Colour", "duration": 210, "isrc_id": "1236"},
+        {"name": "When I Needed You", "duration": 221, "isrc_id": "1237"}
+    ]
+    assert multitrack_drafting.tracklist_parser(input_str) == expected_output
+
+    # Test case 4: valid input with empty lines
+    input_str = "Warm Blood|4:13|1234\n\nLove Again|3:37|1235\n\nFavourite Colour|3:30|1236\n\nWhen I Needed You|3:41|1237\n\n"
+    expected_output = [
+        {"name": "Warm Blood", "duration": 253, "isrc_id": "1234"},
+        {"name": "Love Again", "duration": 217, "isrc_id": "1235"},
+        {"name": "Favourite Colour", "duration": 210, "isrc_id": "1236"},
+        {"name": "When I Needed You", "duration": 221, "isrc_id": "1237"}
+    ]
+    assert multitrack_drafting.tracklist_parser(input_str) == expected_output
+
+    # Test case 5: valid input with only track names
+    input_str = "Warm Blood\nLove Again\nFavourite Colour\nWhen I Needed You\n"
+    expected_output = [
+        {"name": "Warm Blood"},
+        {"name": "Love Again"},
+        {"name": "Favourite Colour"},
+        {"name": "When I Needed You"}
+    ]
+    assert multitrack_drafting.tracklist_parser(input_str) == expected_output
+
+def test_duration_to_seconds():
+    # Test case 1: valid input with minutes and seconds
+    input_duration = '04:13'
+    expected_output = 253
+    assert multitrack_drafting.duration_to_seconds(input_duration) == expected_output
+
+    # Test case 2: valid input with minutes and seconds
+    input_duration = '4:13'
+    expected_output = 253
+    assert multitrack_drafting.duration_to_seconds(input_duration) == expected_output
+
+    # Test case 3: valid input with hours, minutes, and seconds
+    input_duration = '1:23:45'
+    expected_output = 5025
+    assert multitrack_drafting.duration_to_seconds(input_duration) == expected_output
+
+    # Test case 4: valid input with hours, minutes, and seconds
+    input_duration = '1:00:00'
+    expected_output = 3600
+    assert multitrack_drafting.duration_to_seconds(input_duration) == expected_output
+
+    # Test case 5: invalid input with missing minutes
+    input_duration = ':45'
+    try:
+        multitrack_drafting.duration_to_seconds(input_duration)
+    except ValueError as e:
+        assert str(e) == 'Invalid format'
+
+    # Test case 6: invalid input with missing seconds
+    input_duration = '1:'
+    try:
+        multitrack_drafting.duration_to_seconds(input_duration)
+    except ValueError as e:
+        assert str(e) == 'Invalid format'
+
+    # Test case 7: invalid input with missing minutes and seconds
+    input_duration = ':'
+    try:
+        multitrack_drafting.duration_to_seconds(input_duration)
+    except ValueError as e:
+        assert str(e) == 'Invalid format'
