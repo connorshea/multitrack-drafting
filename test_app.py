@@ -233,6 +233,23 @@ def test_tracklist_with_dupes_post_album(client):
     assert 'Successfully created track items and tracklist.' not in html
     assert 'Tracklist cannot have duplicate track names.' in html
 
+# Verify that we catch dupes even if they have different spacing.
+def test_tracklist_with_dupes_with_spaces_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist='   Foo   \n  Bar\n \n  Foo   '
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'Tracklist cannot have duplicate track names.' in html
+
 def test_blank_track_description_post_album(client):
     csrf_token = setup_for_post_album(client)
     referrer = multitrack_drafting.full_url('album_get', item_id=123)
