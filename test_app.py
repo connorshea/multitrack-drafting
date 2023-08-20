@@ -63,7 +63,7 @@ class MockResponse:
                 return { 'query': { 'tokens': { 'csrftoken': '70abcd1235215ffbc7xy34a2c7c8b12b99e62b2c+\\' } } }
         else:
             return {}
-    
+
     def post(action, **kwargs):
         if action == 'wbeditentity':
             if kwargs.get('new') == 'item':
@@ -77,7 +77,7 @@ class MockSession:
 
     def post(action, **kwargs):
         return MockResponse.post(action, **kwargs)
-    
+
 def post_album_helper(
         client,
         csrf_token,

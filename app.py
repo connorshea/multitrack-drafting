@@ -420,6 +420,20 @@ def album_get(item_id: int) -> RRV:
                                  performer_name=performer_name,
                                  warnings=warnings)
 
+@app.post('/album/redirect')
+def album_redirect() -> RRV:
+    session = authenticated_session()
+    if session is None:
+        # Bail out early if we aren’t logged in.
+        return flask.redirect(flask.url_for('login'))
+
+    item_id = flask.request.form.get('item_id')
+
+    # Given 'Q123' or '123', redirect to the album page.
+    if item_id.startswith('Q'):
+        return flask.redirect(flask.url_for('album_get', item_id=item_id[1:]))
+    else:
+        return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
 @app.post('/album/Q<item_id>')
 def album_post(item_id: int) -> RRV:
