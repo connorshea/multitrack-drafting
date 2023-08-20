@@ -151,12 +151,19 @@ def authenticated_session() -> Optional[mwapi.Session]:
                          user_agent=user_agent)
 
 # TODO:
-# - Add EditGroups
-# - Add edit summaries
 # - Figure out rate limiting and how it should be handled, to avoid the endpoint hitting errors while we're in the middle of creating the items.
 #
 # Create the tracklist items and return the newly-created item IDs.
-def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, language: str, track_type: str, track_description_language: str, track_description: str) -> list[int]:
+def create_tracklist_items(
+        session: mwapi.Session,
+        tracklist: list[str],
+        performer_qid: int | None,
+        language: str,
+        track_type: str,
+        track_description_language: str,
+        track_description: str,
+        edit_group_id: str
+    ) -> list[int]:
     track_item_ids = []
     for track in tracklist:
         # Create track item.
@@ -167,7 +174,8 @@ def create_tracklist_items(session: mwapi.Session, tracklist: list[str], perform
             language,
             track_type,
             track_description_language,
-            track_description
+            track_description,
+            edit_group_id
         )
         track_item_ids.append(int(track_item['entity']['id'][1:]))
 
@@ -200,7 +208,8 @@ def create_wikidata_track_item(
         language: str,
         track_type: str,
         track_description_language: str,
-        track_description: str
+        track_description: str,
+        edit_group_id: str
     ):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
 
@@ -233,10 +242,17 @@ def create_wikidata_track_item(
         action='wbeditentity',
         new='item',
         token=csrf_token_from_wikidata,
-        data=json.dumps(data)
+        data=json.dumps(data),
+        summary=f'Create new item for music track on album. ([[:toolforge:editgroups/b/multitrack/{edit_group_id}|details]])'
     )
 
-def add_tracklist_to_album_item(session: mwapi.Session, item_id: int, track_ids: list[int], include_track_numbers: bool):
+def add_tracklist_to_album_item(
+        session: mwapi.Session,
+        item_id: int,
+        track_ids: list[int],
+        include_track_numbers: bool,
+        edit_group_id: str
+    ):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
 
     # Add the tracklist claim.
@@ -279,7 +295,8 @@ def add_tracklist_to_album_item(session: mwapi.Session, item_id: int, track_ids:
         action='wbeditentity',
         id=f'Q{item_id}',
         token=csrf_token_from_wikidata,
-        data=json.dumps(data)
+        data=json.dumps(data),
+        summary=f'Add tracklist entries to album. ([[:toolforge:editgroups/b/multitrack/{edit_group_id}|details]])'
     )
 
 # We can optionally pass it an item to avoid making an extra API call.
@@ -421,18 +438,22 @@ def album_post(item_id: int) -> RRV:
         flask.flash('Tracklist cannot have duplicate track names.', 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
+    # Generate a random 10 character string for the edit group ID.
+    edit_group_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+
     # Create the tracklist items.
     track_ids = create_tracklist_items(
         session,
-        clean_tracklist,
-        performer_qid,
-        language,
-        track_type,
-        track_description_language,
-        track_description
+        tracklist=clean_tracklist,
+        performer_qid=performer_qid,
+        language=language,
+        track_type=track_type,
+        track_description_language=track_description_language,
+        track_description=track_description,
+        edit_group_id=edit_group_id
     )
 
-    add_tracklist_to_album_item(session, item_id, track_ids, include_track_numbers)
+    add_tracklist_to_album_item(session, item_id=item_id, track_ids=track_ids, include_track_numbers=include_track_numbers, edit_group_id=edit_group_id)
 
     # Provide a success message to confirm to the user that the records were created.
     flask.flash('Successfully created track items and tracklist.', 'success')
