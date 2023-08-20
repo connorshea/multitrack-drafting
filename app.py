@@ -460,6 +460,9 @@ def tracklist_parser(tracklist: str) -> list[dict[str, str]]:
     # Remove any empty tracks.
     result = [x for x in result if x["name"] != ""]
 
+    if len(result) == 0:
+        raise ValueError('No track names in tracklist.')
+
     # Convert duration to seconds if duration is defined.
     for track in result:
         if "duration" in track:
@@ -587,7 +590,12 @@ def album_post(item_id: int) -> RRV:
         flask.flash('No tracklist provided.', 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
-    clean_tracklist = tracklist_parser(tracklist)
+    # Rescue ValueError exceptions from the tracklist parser.
+    try:
+        clean_tracklist = tracklist_parser(tracklist)
+    except ValueError as e:
+        flask.flash(str(e), 'danger')
+        return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
     # Validate that the tracklist doesn't have more than 50 items, and that
     # none of the tracks are longer than 250 characters (the label length

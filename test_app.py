@@ -304,6 +304,23 @@ def test_track_description_that_is_too_long_post_album(client):
     assert 'Successfully created track items and tracklist.' not in html
     assert 'Track description cannot be longer than 250 characters.' in html
 
+def test_track_names_all_blank_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    tracklist='|3:30\n|4:13'
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist=tracklist
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'No track names in tracklist.' in html
+
 def test_tracklist_parser():
     # Test case 1: valid input with all fields
     input_str = "Warm Blood|4:13|USUM71507033\nLove Again|3:37|USUM71507038\nFavourite Colour|3:30|USUM71507036\nWhen I Needed You|3:41|USUM71507034\n"
