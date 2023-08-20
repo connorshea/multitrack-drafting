@@ -16,17 +16,29 @@
 </div>
 {% endif %}
 
-{% if errors != None %}
-<div class="alert alert-danger">
-  {{ ','.join(errors) }}
-</div>
-{% else %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class='flashes'>
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</li>
+    {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
 {% if warnings|length != 0 %}
-<div class="alert alert-warning">
-  {{ ','.join(warnings) }}
-</div>
+  {% for warning in warnings %}
+    <div class="alert alert-warning">
+      {{ warning }}
+    </div>
+  {% endfor %}
 {% endif %}
+
+{% if missing == True %}
+<div class="alert alert-danger">
+  Item Q{{item_id}} does not exist on Wikidata
+</div>
+{% else %}
 
 <form action="{{ url_for('album_post', item_id=item_id) }}" method="POST">
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
@@ -47,15 +59,15 @@
       <label for="track_description_language">Description language</label>
       <select class="form-control" id="track_description_language" name="track_description_language">
         <option value="en" selected>English</option>
-      <option value="fr">French</option>
-      <option value="it">Italian</option>
-      <option value="de">German</option>
-      <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="it">Italian</option>
+        <option value="de">German</option>
+        <option value="es">Spanish</option>
       </select>
     </div>
     <div class="form-group col-md-9">
       <label for="track_description">Track description</label>
-      <input type="text" class="form-control" id="track_description" name="track_description" aria-describedby="trackDescriptionHelp">
+      <input type="text" class="form-control" id="track_description" name="track_description" aria-describedby="trackDescriptionHelp" required>
       <small id="trackDescriptionHelp" class="form-text text-muted">
         The description for the track items. This will be reused for each track in the tracklist, so it should apply to them all.
       </small>
@@ -80,7 +92,7 @@
 
   <div class="form-group">
     <!-- TODO: Eventually use mul for labels and remove the language selector entirely? -->
-    <label for="lang">Language</label>
+    <label for="lang">Label language</label>
     <select class="form-control" id="language" name="language" aria-describedby="languageHelp">
       <option value="en" selected>English</option>
       <option value="fr">French</option>
@@ -99,5 +111,4 @@
   <button type="submit" class="btn btn-primary mb-5">Create tracklist</button>
 </form>
 {% endif %}
-
 {% endblock %}

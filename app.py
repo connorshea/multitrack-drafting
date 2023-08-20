@@ -326,15 +326,17 @@ def album_get(item_id: int) -> RRV:
         return flask.render_template('album.html',
                                      item_id=item_id,
                                      item_name='No English title on Wikidata',
-                                     errors=[f'Item Q{item_id} does not exist on Wikidata'])
+                                     performer_item_id=None,
+                                     performer_name=None,
+                                     missing=True)
 
     item_name = glom(item_entity, 'labels.en.value', default='No English title on Wikidata')
     performer_item_id = glom(item_entity, Path('claims', PERFORMER_PROPERTY, 0, 'mainsnak', 'datavalue', 'value', 'numeric-id'), default=None)
     performer_name = None if performer_item_id == None else get_wikidata_item_name(session, performer_item_id, 'en')
 
     # Add a warning if it already has a tracklist
-    if check_if_item_has_property(session, item_id, TRACKLIST_PROPERTY[1:], item_entity) == True:
-        warnings.append(f'Item Q{item_id} already has a tracklist')
+    if check_if_item_has_property(session, item_id, int(TRACKLIST_PROPERTY[1:]), item_entity) == True:
+        warnings.append(f'Item Q{item_id} already has a tracklist. This may cause problems if you include track numbers, or may result in duplicate tracks.')
 
     # Add a warning if it isn't an album
     item_instance_of = get_wikidata_instance_of(session, item_id, item_entity)
@@ -348,7 +350,6 @@ def album_get(item_id: int) -> RRV:
                                  item_name=item_name,
                                  performer_item_id=performer_item_id,
                                  performer_name=performer_name,
-                                 errors=None,
                                  warnings=warnings)
 
 
@@ -370,7 +371,6 @@ def album_post(item_id: int) -> RRV:
         return flask.render_template('album.html',
                                      item_id=item_id,
                                      csrf_error=csrf_error,
-                                     errors=None,
                                      warnings=[])
 
     session = authenticated_session()
@@ -379,18 +379,25 @@ def album_post(item_id: int) -> RRV:
         # Bail out early if we aren’t logged in.
         return flask.redirect(flask.url_for('login'))
 
+    if track_description.isspace() or track_description == '':
+        # Bail out early if we don't have a tracklist.
+        flask.flash('No track description provided.', 'danger')
+        return flask.redirect(flask.url_for('album_get', item_id=item_id))
+
     if tracklist.isspace():
         # Bail out early if we don't have a tracklist.
-        return flask.render_template('album.html',
-                                     item_id=item_id,
-                                     csrf_error=csrf_error,
-                                     errors=['No tracklist provided'],
-                                     warnings=[])
+        flask.flash('No tracklist provided.', 'danger')
+        return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
-    # Split the tracklist into a list and create the tracklist items.
+    # Split the tracklist into a list and strip extra spaces from each track.
+    clean_tracklist = [track.strip() for track in tracklist.splitlines()]
+    # Remove empty lines.
+    clean_tracklist = list(filter(lambda x: x != '', clean_tracklist))
+
+    # Create the tracklist items.
     track_ids = create_tracklist_items(
         session,
-        [track.strip() for track in tracklist.splitlines()],
+        clean_tracklist,
         performer_qid,
         language,
         track_type,
@@ -400,12 +407,11 @@ def album_post(item_id: int) -> RRV:
 
     add_tracklist_to_album_item(session, item_id, track_ids, include_track_numbers)
 
-    # TODO: Figure out the best way to render this without losing the item_name we pulled from Wikidata, and any other checks.
-    return flask.render_template('album.html',
-                                 item_id=item_id,
-                                 csrf_error=csrf_error,
-                                 errors=None,
-                                 warnings=[])
+    # Provide a success message to confirm to the user that the records were created.
+    flask.flash('Successfully created track items and tracklist.', 'success')
+
+    # Redirect to the album page at the end.
+    return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
 
 @app.route('/login')
