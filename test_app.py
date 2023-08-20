@@ -15,6 +15,19 @@ def client():
         yield client
     # request context stays alive until the fixture is closed
 
+# Mock the OAuth session and Wikidata API requests.
+@pytest.fixture(autouse=True)
+def mock_oauth(monkeypatch):
+    def mockreturn():
+        return MockSession
+
+    # Set the oauth_access_token on the flask session
+    with multitrack_drafting.app.test_request_context() as context:
+        context.session['oauth_access_token'] = 'test token'
+
+    # stub the authenticated_session method
+    monkeypatch.setattr(multitrack_drafting, "authenticated_session", mockreturn)
+
 def test_csrf_token_generate():
     with multitrack_drafting.app.test_request_context():
         token = multitrack_drafting.csrf_token()
@@ -33,6 +46,7 @@ def test_csrf_token_load():
         assert multitrack_drafting.csrf_token() == 'test token'
 
 class MockResponse:
+    # Load faked responses from the Wikidata API based on what we pass in to the request.
     def get(action, meta=None, **kwargs):
         if action == 'wbgetentities':
             if kwargs['ids'] == 'Q123':
@@ -49,22 +63,64 @@ class MockResponse:
                 return { 'query': { 'tokens': { 'csrftoken': '70abcd1235215ffbc7xy34a2c7c8b12b99e62b2c+\\' } } }
         else:
             return {}
+    
+    def post(action, **kwargs):
+        if action == 'wbeditentity':
+            if kwargs.get('new') == 'item':
+                return { 'success': 1, 'entity': { 'id': 'Q123' } }
+            elif kwargs.get('id') == 'Q123':
+                return None
 
 class MockSession:
     def get(action, meta=None, **kwargs):
         return MockResponse.get(action, meta, **kwargs)
 
-def test_get_album(client, monkeypatch):
-    def mockreturn():
-        return MockSession
+    def post(action, **kwargs):
+        return MockResponse.post(action, **kwargs)
+    
+def post_album_helper(
+        client,
+        csrf_token,
+        referrer,
+        tracklist,
+        track_type='music_track_with_vocals',
+        track_description_language='en',
+        track_description='Foo',
+        performer_qid='',
+        recorded_at_qid='',
+        producer_qid='',
+        language='en',
+        include_track_numbers='on'
+    ):
+    headers = { 'Referer': referrer }
 
-    # Set the oauth_access_token on the flask session
-    with multitrack_drafting.app.test_request_context() as context:
-        context.session['oauth_access_token'] = 'test token'
+    return client.post('/album/Q123',
+                           data={
+                               'csrf_token': csrf_token,
+                               'track_type': track_type,
+                               'track_description_language': track_description_language,
+                               'track_description': track_description,
+                               'tracklist': tracklist,
+                               'performer_qid': performer_qid,
+                               'recorded_at_qid': recorded_at_qid,
+                               'producer_qid': producer_qid,
+                               'language': language,
+                               'include_track_numbers': include_track_numbers
+                            },
+                           headers=headers,
+                           follow_redirects=True)
 
-    # stub the authenticated_session method
-    monkeypatch.setattr(multitrack_drafting, "authenticated_session", mockreturn)
+def setup_for_post_album(client):
+    response = client.get('/album/Q123')
+    html = response.get_data(as_text=True)
+    assert 'Add tracks to' in html
 
+    # extract CSRF token
+    match = re.search(r'name="csrf_token" type="hidden" value="([^"]*)"', html)
+    assert match is not None
+    return match.group(1)
+
+def test_get_album(client):
     response = client.get('/album/Q123')
     html = response.get_data(as_text=True)
     assert 'Add tracks to' in html
@@ -79,17 +135,7 @@ def test_get_album(client, monkeypatch):
     # Assert that the user is logged in.
     assert re.search(r'Logged in as <a href=\".*\"><bdi>User123', html) is not None
 
-def test_get_album_when_missing(client, monkeypatch):
-    def mockreturn():
-        return MockSession
-
-    # Set the oauth_access_token on the flask session
-    with multitrack_drafting.app.test_request_context() as context:
-        context.session['oauth_access_token'] = 'test token'
-
-    # stub the authenticated_session method
-    monkeypatch.setattr(multitrack_drafting, "authenticated_session", mockreturn)
-
+def test_get_album_when_missing(client):
     response = client.get('/album/Q456')
     html = response.get_data(as_text=True)
     assert 'Item Q456 does not exist on Wikidata' in html
@@ -97,37 +143,45 @@ def test_get_album_when_missing(client, monkeypatch):
     assert 'Tracklist' not in html
     assert 'Performer QID' not in html
 
-# def test_post_album(client):
-#     # default praise
-#     response = client.get('/album/Q123')
-#     html = response.get_data(as_text=True)
-#     assert 'Add tracks to' in html
+def test_basic_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
 
-#     # extract CSRF token
-#     match = re.search(r'name="csrf_token" type="hidden" value="([^"]*)"', html)
-#     assert match is not None
-#     csrf_token = match.group(1)
+    tracklist = 'Foo\nBar'
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist=tracklist,
+        track_type='music_track_with_vocals',
+        track_description_language='en',
+        track_description='song by Carly Rae Jepsen',
+        performer_qid='123',
+        recorded_at_qid='',
+        producer_qid='',
+        language='en',
+        include_track_numbers='on'
+    )
 
-#     referrer = multitrack_drafting.full_url('album_get', 'Q123')
-#     headers = { 'Referer': referrer }
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' in html
 
-#     # update praise
-#     response = client.post('/album/Q123',
-#                            data={
-#                                'csrf_token': csrf_token,
-#                                'praise': 'How cool!'
-#                             },
-#                            headers=headers)
-#     html = response.get_data(as_text=True)
-#     assert '<h2>How cool!</h2>' in html
-#     assert 'You rock!' not in html
+def test_tracklist_with_long_track_name_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
 
-#     # try to update praise with wrong CSRF token
-#     response = client.post('/praise',
-#                            data={'csrf_token': 'wrong ' + csrf_token,
-#                                  'praise': 'Boo!'},
-#                            headers=headers)
-#     html = response.get_data(as_text=True)
-#     assert '<h2>Boo!</h2>' not in html
-#     assert '<h2>How cool!</h2>' in html
-#     assert 'value="Boo!"' in html  # input is repeated
+    # A track name with more than 250 characters will not be accepted.
+    tracklist = 'Foo\nBarrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr'
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist=tracklist,
+        track_description='song by Carly Rae Jepsen',
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'A track name cannot be longer than 250 characters.' in html
