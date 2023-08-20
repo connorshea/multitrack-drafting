@@ -63,13 +63,13 @@ def read_private(func, *args, **kwargs):
 has_config = app.config.from_file('config.yaml',
                                   load=read_private(yaml.safe_load),
                                   silent=True)
-if not has_config:
+if not has_config or app.testing == True:
     print('config.yaml file not found, assuming local development setup')
     characters = string.ascii_letters + string.digits
     random_string = ''.join(random.choice(characters) for _ in range(64))
     app.secret_key = random_string
 
-if 'OAUTH' in app.config:
+if 'OAUTH' in app.config and app.testing != True:
     oauth_config = app.config['OAUTH']
     consumer_token = mwoauth.ConsumerToken(oauth_config['consumer_key'],
                                            oauth_config['consumer_secret'])

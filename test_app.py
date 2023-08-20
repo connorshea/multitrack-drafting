@@ -4,10 +4,11 @@ import re
 
 import app as multitrack_drafting
 
-
 @pytest.fixture
 def client():
     multitrack_drafting.app.testing = True
+    # Spoof the OAUTH values so the tests work even if config.yaml isn't present.
+    multitrack_drafting.app.config['OAUTH'] = {'consumer_key': 'abcdefghijklmao', 'consumer_secret': 'abcdefghijklmao'}
     client = multitrack_drafting.app.test_client()
 
     with client:
