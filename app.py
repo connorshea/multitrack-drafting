@@ -150,6 +150,11 @@ def authenticated_session() -> Optional[mwapi.Session]:
                          auth=auth,
                          user_agent=user_agent)
 
+# TODO:
+# - Add EditGroups
+# - Add edit summaries
+# - Figure out rate limiting and how it should be handled, to avoid the endpoint hitting errors while we're in the middle of creating the items.
+#
 # Create the tracklist items and return the newly-created item IDs.
 def create_tracklist_items(session: mwapi.Session, tracklist: list[str], performer_qid: int | None, language: str, track_type: str, track_description_language: str, track_description: str) -> list[int]:
     track_item_ids = []
@@ -168,6 +173,7 @@ def create_tracklist_items(session: mwapi.Session, tracklist: list[str], perform
 
     return track_item_ids
 
+# Helper method for generating claim object dicts for the Wikidata API.
 def generate_wikidata_claim_object(property_id: str, item_id: str) -> dict:
     return {
         'mainsnak': {
