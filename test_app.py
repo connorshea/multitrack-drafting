@@ -321,6 +321,23 @@ def test_track_names_all_blank_post_album(client):
     assert 'Successfully created track items and tracklist.' not in html
     assert 'No track names in tracklist.' in html
 
+def test_track_duration_invalid_post_album(client):
+    csrf_token = setup_for_post_album(client)
+    referrer = multitrack_drafting.full_url('album_get', item_id=123)
+
+    tracklist='Foo|3:'
+    # Post the tracklist.
+    response = post_album_helper(
+        client=client,
+        csrf_token=csrf_token,
+        referrer=referrer,
+        tracklist=tracklist
+    )
+
+    html = response.get_data(as_text=True)
+    assert 'Successfully created track items and tracklist.' not in html
+    assert 'Invalid duration format for' in html
+
 def test_tracklist_parser():
     # Test case 1: valid input with all fields
     input_str = "Warm Blood|4:13|USUM71507033\nLove Again|3:37|USUM71507038\nFavourite Colour|3:30|USUM71507036\nWhen I Needed You|3:41|USUM71507034\n"
@@ -397,18 +414,18 @@ def test_duration_to_seconds():
     try:
         multitrack_drafting.duration_to_seconds(input_duration)
     except ValueError as e:
-        assert str(e) == 'Invalid format'
+        assert str(e) == "Invalid duration format for ':45'."
 
     # Test case 6: invalid input with missing seconds
     input_duration = '1:'
     try:
         multitrack_drafting.duration_to_seconds(input_duration)
     except ValueError as e:
-        assert str(e) == 'Invalid format'
+        assert str(e) == "Invalid duration format for '1:'."
 
     # Test case 7: invalid input with missing minutes and seconds
     input_duration = ':'
     try:
         multitrack_drafting.duration_to_seconds(input_duration)
     except ValueError as e:
-        assert str(e) == 'Invalid format'
+        assert str(e) == "Invalid duration format for ':'."
