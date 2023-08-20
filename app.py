@@ -25,6 +25,7 @@ user_agent = toolforge.set_user_agent(
 
 TEST_WIKIDATA = True
 INSTANCE_OF_PROPERTY = 'P82' if TEST_WIKIDATA else 'P31'
+TITLE_PROPERTY = 'P77107' if TEST_WIKIDATA else 'P1476'
 PERFORMER_PROPERTY = 'P97837' if TEST_WIKIDATA else 'P175'
 RECORDED_AT_PROPERTY = 'P97839' if TEST_WIKIDATA else 'P483'
 PRODUCER_PROPERTY = 'P97838' if TEST_WIKIDATA else 'P162'
@@ -173,7 +174,7 @@ def create_tracklist_items(
         # Create track item.
         track_item = create_wikidata_track_item(
             session,
-            label=track,
+            title=track,
             performer_qid=performer_qid,
             recorded_at_qid=recorded_at_qid,
             producer_qid=producer_qid,
@@ -207,9 +208,27 @@ def generate_wikidata_claim_object(property_id: str, item_id: str) -> dict:
         'rank': 'normal'
     }
 
+def generate_wikidata_monolingual_text_claim_object(property_id: str, language: str, string: str) -> dict:
+    return {
+        'mainsnak': {
+            'snaktype': 'value',
+            'property': property_id,
+            'datatype': 'monolingualtext',
+            'datavalue': {
+                'value': {
+                    'language': language,
+                    'text': string
+                },
+                'type': 'monolingualtext'
+            }
+        },
+        'type': 'statement',
+        'rank': 'normal'
+    }
+
 def create_wikidata_track_item(
         session: mwapi.Session,
-        label: str,
+        title: str,
         performer_qid: int | None,
         recorded_at_qid: int | None,
         producer_qid: int | None,
@@ -224,7 +243,7 @@ def create_wikidata_track_item(
     data = {
         'labels': [
             {
-                'language': language, 'value': label
+                'language': language, 'value': title
             }
         ],
         'descriptions': [
@@ -239,6 +258,12 @@ def create_wikidata_track_item(
     data['claims'].append(
         generate_wikidata_claim_object(INSTANCE_OF_PROPERTY, TRACK_TYPES[track_type])
     )
+
+    # Add 'title' statement.
+    data['claims'].append(
+        generate_wikidata_monolingual_text_claim_object(TITLE_PROPERTY, language=language, string=title)
+    )
+
     
     # If we have a performer, add it to the data.
     if performer_qid != None and performer_qid != '':
