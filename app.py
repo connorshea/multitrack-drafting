@@ -528,7 +528,7 @@ def album_get(item_id: int) -> RRV:
     item_instance_of = get_wikidata_instance_of(session, item_id, item_entity)
     if item_instance_of == None:
         warnings.append(f'Item Q{item_id} has no "instance of" set and may not be an album.')
-    elif item_instance_of not in VALID_ALBUM_TYPES:
+    elif len(set(item_instance_of).intersection(VALID_ALBUM_TYPES)) == 0:
         warnings.append(f'Item Q{item_id} is not an album or EP.')
 
     return flask.render_template('album.html',
