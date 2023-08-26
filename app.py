@@ -41,7 +41,10 @@ MUSIC_TRACK_WITHOUT_VOCALS_ITEM = 'Q232162' if TEST_WIKIDATA else 'Q55850643'
 
 VALID_ALBUM_TYPES = [
     1785 if TEST_WIKIDATA else 482994, # album
-    232169 if TEST_WIKIDATA else 169930 # EP
+    232169 if TEST_WIKIDATA else 169930, # EP
+    123 if TEST_WIKIDATA else 108352648, # album release
+    124 if TEST_WIKIDATA else 108352496, # single release
+    125 if TEST_WIKIDATA else 108346556 # EP release
 ]
 
 # The unit to use with the duration property.
