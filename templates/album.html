@@ -54,17 +54,10 @@
   </div>
 
   <!-- Picker for track description language -->
-  <!-- TODO: Add more languages. -->
   <div class="form-row">
     <div class="form-group col-md-3">
-      <label for="track_description_language">Description language</label>
-      <select class="form-control" id="track_description_language" name="track_description_language">
-        <option value="en" selected>English</option>
-        <option value="fr">French</option>
-        <option value="it">Italian</option>
-        <option value="de">German</option>
-        <option value="es">Spanish</option>
-      </select>
+      <label for="track_description_language">Description language code</label>
+      <input type="text" class="form-control" id="track_description_language" name="track_description_language" required value="en">
     </div>
     <div class="form-group col-md-9">
       <label for="track_description">Track description</label>
@@ -114,16 +107,10 @@
   </div>
 
   <div class="form-group">
-    <!-- TODO: Eventually use mul for labels and just have this represent the title only. -->
-    <label for="lang">Title language</label>
-    <select class="form-control" id="language" name="language" aria-describedby="languageHelp">
-      <option value="en" selected>English</option>
-      <option value="fr">French</option>
-      <option value="it">Italian</option>
-      <option value="de">German</option>
-      <option value="es">Spanish</option>
-    </select>
-    <small id="languageHelp" class="form-text text-muted">The language of the title property and label used for the individual track items.</small>
+    <!-- TODO: Eventually use mul for lavels and just have this represent the title property only. -->
+    <label for="language">Title language code</label>
+    <input type="text" class="form-control" id="language" name="language" aria-describedby="languageHelp" required value="en">
+    <small id="languageHelp" class="form-text text-muted">The language code of the title property and label used for the individual track items. For example, <code>en</code>, <code>es</code>, <code>fr</code>, etc.</small>
   </div>
 
   <div class="form-group form-check">
