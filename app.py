@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import re
 import decorator
 import flask
 from flask.typing import ResponseReturnValue as RRV
@@ -493,6 +494,19 @@ def duration_to_seconds(duration):
     else:
         raise ValueError(f'Invalid duration format for \'{":".join(duration)}\'.')
 
+# Normalize a QID to an integer.
+def normalize_qid(qid: str) -> int | None:
+    if qid == None or qid == '':
+        return None
+
+    if not re.match('Q?\d+', qid):
+        raise ValueError('Invalid QID format, must be in a format like "Q123" or "123".')
+
+    if qid.startswith('Q'):
+        return int(qid[1:])
+    else:
+        return int(qid)
+
 @app.route('/')
 def index() -> RRV:
     return flask.render_template('index.html')
@@ -565,9 +579,9 @@ def album_post(item_id: int) -> RRV:
         track_description_language = flask.request.form.get('track_description_language')
         track_description = flask.request.form.get('track_description')
         tracklist = flask.request.form.get('tracklist')
-        performer_qid = flask.request.form.get('performer_qid')
-        recorded_at_qid = flask.request.form.get('recorded_at_qid')
-        producer_qid = flask.request.form.get('producer_qid')
+        performer_qid = normalize_qid(flask.request.form.get('performer_qid'))
+        recorded_at_qid = normalize_qid(flask.request.form.get('recorded_at_qid'))
+        producer_qid = normalize_qid(flask.request.form.get('producer_qid'))
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
         language = flask.request.form.get('language')
     else:

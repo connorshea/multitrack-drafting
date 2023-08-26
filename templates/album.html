@@ -81,9 +81,9 @@
       <div class="input-group-prepend">
         <span class="input-group-text" id="performer">Performer QID</span>
       </div>
-      <input type="text" class="form-control" id="performer-qid" name="performer_qid" aria-describedby="performer" value="{{ performer_item_id }}">
+      <input type="text" class="form-control" id="performer-qid" name="performer_qid" aria-describedby="performer" value="{{ performer_item_id }}" pattern="Q?\d+">
     </div>
-    <small id="performerHelp" class="form-text text-muted">Just the numeric ID. If left empty, no performer will be added to track items.</small>
+    <small id="performerHelp" class="form-text text-muted">Can be in the format of "Q123" or "123". If left empty, no performer will be added to track items.</small>
   </div>
 
   <div class="form-group mb-3">
@@ -91,9 +91,9 @@
       <div class="input-group-prepend">
         <span class="input-group-text" id="recorded_at">Recorded at studio or venue QID</span>
       </div>
-      <input type="text" class="form-control" id="recorded-at-qid" name="recorded_at_qid" aria-describedby="recorded_at">
+      <input type="text" class="form-control" id="recorded-at-qid" name="recorded_at_qid" aria-describedby="recorded_at" pattern="Q?\d+">
     </div>
-    <small id="recordedAtHelp" class="form-text text-muted">Just the numeric ID. If left empty, no recording location will be added to track items.</small>
+    <small id="recordedAtHelp" class="form-text text-muted">Can be in the format of "Q123" or "123". If left empty, no recording location will be added to track items.</small>
   </div>
 
   <div class="form-group mb-3">
@@ -101,9 +101,9 @@
       <div class="input-group-prepend">
         <span class="input-group-text" id="producer">Producer QID</span>
       </div>
-      <input type="text" class="form-control" id="producer-qid" name="producer_qid" aria-describedby="producer">
+      <input type="text" class="form-control" id="producer-qid" name="producer_qid" aria-describedby="producer" pattern="Q?\d+">
     </div>
-    <small id="producerHelp" class="form-text text-muted">Just the numeric ID. If left empty, no producer will be added to track items.</small>
+    <small id="producerHelp" class="form-text text-muted">Can be in the format of "Q123" or "123". If left empty, no producer will be added to track items.</small>
   </div>
 
   <div class="form-group">
