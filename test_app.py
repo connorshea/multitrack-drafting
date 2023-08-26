@@ -429,3 +429,17 @@ def test_duration_to_seconds():
         multitrack_drafting.duration_to_seconds(input_duration)
     except ValueError as e:
         assert str(e) == "Invalid duration format for ':'."
+
+def test_normalize_qid_with_valid_qid():
+    assert multitrack_drafting.normalize_qid('Q123') == 123
+    assert multitrack_drafting.normalize_qid('123') == 123
+    assert multitrack_drafting.normalize_qid(None) == None
+    assert multitrack_drafting.normalize_qid('') == None
+
+def test_normalize_qid_with_invalid_qid():
+    with pytest.raises(ValueError):
+        multitrack_drafting.normalize_qid('Q')
+    with pytest.raises(ValueError):
+        multitrack_drafting.normalize_qid('Qabc')
+    with pytest.raises(ValueError):
+        multitrack_drafting.normalize_qid('abc')
