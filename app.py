@@ -528,7 +528,7 @@ def album_get(item_id: int) -> RRV:
     return flask.render_template('album.html',
                                  item_id=item_id,
                                  item_name=item_name,
-                                 performer_item_id=performer_item_id,
+                                 performer_item_id=performer_item_id or '',
                                  performer_name=performer_name,
                                  warnings=warnings)
 
