@@ -34,17 +34,17 @@ SERIES_ORDINAL_PROPERTY = 'P551' if TEST_WIKIDATA else 'P1545'
 DURATION_PROPERTY = 'P374' if TEST_WIKIDATA else 'P2047'
 ISRC_PROPERTY = 'P97842' if TEST_WIKIDATA else 'P1243'
 ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
-SONG_ITEM = 'Q1811' if TEST_WIKIDATA else 'Q7366'
 AUDIO_TRACK_ITEM = 'Q232068' if TEST_WIKIDATA else 'Q7302866'
 MUSIC_TRACK_WITH_VOCALS_ITEM = 'Q232069' if TEST_WIKIDATA else 'Q55850593'
+MUSIC_TRACK_WITHOUT_VOCALS_ITEM = 'Q232162' if TEST_WIKIDATA else 'Q55850643'
 
 # The unit to use with the duration property.
 SECONDS_UNIT = 'http://test.wikidata.org/entity/Q166170' if TEST_WIKIDATA else 'http://www.wikidata.org/entity/Q11574'
 
 TRACK_TYPES = {
-    'song': SONG_ITEM,
     'audio_track': AUDIO_TRACK_ITEM,
-    'music_track_with_vocals': MUSIC_TRACK_WITH_VOCALS_ITEM
+    'music_track_with_vocals': MUSIC_TRACK_WITH_VOCALS_ITEM,
+    'music_track_without_vocals': MUSIC_TRACK_WITHOUT_VOCALS_ITEM
 }
 
 @decorator.decorator
