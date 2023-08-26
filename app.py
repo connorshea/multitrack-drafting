@@ -23,7 +23,8 @@ user_agent = toolforge.set_user_agent(
     'multitrack-drafting',
     email='connor.james.shea+wikidata@gmail.com')
 
-TEST_WIKIDATA = True
+TEST_WIKIDATA = False
+
 INSTANCE_OF_PROPERTY = 'P82' if TEST_WIKIDATA else 'P31'
 TITLE_PROPERTY = 'P77107' if TEST_WIKIDATA else 'P1476'
 PERFORMER_PROPERTY = 'P97837' if TEST_WIKIDATA else 'P175'
