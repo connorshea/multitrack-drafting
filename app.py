@@ -39,6 +39,11 @@ AUDIO_TRACK_ITEM = 'Q232068' if TEST_WIKIDATA else 'Q7302866'
 MUSIC_TRACK_WITH_VOCALS_ITEM = 'Q232069' if TEST_WIKIDATA else 'Q55850593'
 MUSIC_TRACK_WITHOUT_VOCALS_ITEM = 'Q232162' if TEST_WIKIDATA else 'Q55850643'
 
+VALID_ALBUM_TYPES = [
+    1785 if TEST_WIKIDATA else 482994, # album
+    232169 if TEST_WIKIDATA else 169930 # EP
+]
+
 # The unit to use with the duration property.
 SECONDS_UNIT = 'http://test.wikidata.org/entity/Q166170' if TEST_WIKIDATA else 'http://www.wikidata.org/entity/Q11574'
 
@@ -523,8 +528,8 @@ def album_get(item_id: int) -> RRV:
     item_instance_of = get_wikidata_instance_of(session, item_id, item_entity)
     if item_instance_of == None:
         warnings.append(f'Item Q{item_id} has no "instance of" set and may not be an album.')
-    elif int(ALBUM_ITEM[1:]) not in item_instance_of:
-        warnings.append(f'Item Q{item_id} is not an album.')
+    elif item_instance_of not in VALID_ALBUM_TYPES:
+        warnings.append(f'Item Q{item_id} is not an album or EP.')
 
     return flask.render_template('album.html',
                                  item_id=item_id,
