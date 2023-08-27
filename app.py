@@ -17,6 +17,7 @@ import toolforge
 from typing import Optional, Tuple
 import yaml
 from glom import glom, Path
+from helpers import Helpers
 
 app = flask.Flask(__name__)
 
@@ -476,36 +477,9 @@ def tracklist_parser(tracklist: str) -> list[dict[str, str]]:
     # Convert duration to seconds if duration is defined.
     for track in result:
         if "duration" in track:
-            track["duration"] = duration_to_seconds(track["duration"])
+            track["duration"] = Helpers.duration_to_seconds(track["duration"])
 
     return result
-
-def duration_to_seconds(duration):
-    duration = duration.split(':')
-
-    # Raise a ValueError if any of the duration parts are a blank string, e.g. ':15' should be invalid.
-    if '' in duration:
-        raise ValueError(f'Invalid duration format for \'{":".join(duration)}\'.')
-
-    if len(duration) == 2:
-        return int(duration[0]) * 60 + int(duration[1])
-    elif len(duration) == 3:
-        return int(duration[0]) * 3600 + int(duration[1]) * 60 + int(duration[2])
-    else:
-        raise ValueError(f'Invalid duration format for \'{":".join(duration)}\'.')
-
-# Normalize a QID to an integer.
-def normalize_qid(qid: str) -> int | None:
-    if qid == None or qid == '':
-        return None
-
-    if not re.match('Q?\d+', qid):
-        raise ValueError('Invalid QID format, must be in a format like "Q123" or "123".')
-
-    if qid.startswith('Q'):
-        return int(qid[1:])
-    else:
-        return int(qid)
 
 @app.route('/')
 def index() -> RRV:
@@ -579,9 +553,9 @@ def album_post(item_id: int) -> RRV:
         track_description_language = flask.request.form.get('track_description_language')
         track_description = flask.request.form.get('track_description')
         tracklist = flask.request.form.get('tracklist')
-        performer_qid = normalize_qid(flask.request.form.get('performer_qid'))
-        recorded_at_qid = normalize_qid(flask.request.form.get('recorded_at_qid'))
-        producer_qid = normalize_qid(flask.request.form.get('producer_qid'))
+        performer_qid = Helpers.normalize_qid(flask.request.form.get('performer_qid'))
+        recorded_at_qid = Helpers.normalize_qid(flask.request.form.get('recorded_at_qid'))
+        producer_qid = Helpers.normalize_qid(flask.request.form.get('producer_qid'))
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
         language = flask.request.form.get('language')
     else:
