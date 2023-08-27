@@ -594,11 +594,11 @@ def album_post(item_id: int) -> RRV:
         flask.flash(str(e), 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
-    # Validate that the tracklist doesn't have more than 50 items, and that
+    # Validate that the tracklist doesn't have more than 150 items, and that
     # none of the tracks are longer than 250 characters (the label length
     # limit on Wikidata).
-    if len(clean_tracklist) > 50:
-        flask.flash('Tracklist cannot have more than 50 tracks.', 'danger')
+    if len(clean_tracklist) > 150:
+        flask.flash('Tracklist cannot have more than 150 tracks.', 'danger')
         return flask.redirect(flask.url_for('album_get', item_id=item_id))
 
     track_names = [track['name'] for track in clean_tracklist]
