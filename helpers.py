@@ -3,6 +3,9 @@ import re
 class Helpers:
     @staticmethod
     def duration_to_seconds(duration):
+        if not re.match('(\\d+:)?\\d+:\\d+(\\.\\d+)?', duration):
+            raise ValueError(f'Invalid duration format for \'{duration}\'.')
+
         duration = duration.split(':')
 
         # Raise a ValueError if any of the duration parts are a blank string, e.g. ':15' should be invalid.
@@ -10,9 +13,9 @@ class Helpers:
             raise ValueError(f'Invalid duration format for \'{":".join(duration)}\'.')
 
         if len(duration) == 2:
-            return int(duration[0]) * 60 + int(duration[1])
+            return int(duration[0]) * 60 + int(round(float(duration[1])))
         elif len(duration) == 3:
-            return int(duration[0]) * 3600 + int(duration[1]) * 60 + int(duration[2])
+            return int(duration[0]) * 3600 + int(duration[1]) * 60 + int(round(float(duration[2])))
         else:
             raise ValueError(f'Invalid duration format for \'{":".join(duration)}\'.')
 
@@ -22,7 +25,7 @@ class Helpers:
         if qid == None or qid == '':
             return None
 
-        if not re.match('Q?\d+', qid):
+        if not re.match('Q?\\d+', qid):
             raise ValueError('Invalid QID format, must be in a format like "Q123" or "123".')
 
         if qid.startswith('Q'):
