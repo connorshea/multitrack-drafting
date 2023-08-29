@@ -42,6 +42,18 @@ def test_duration_to_seconds_rounding_decimal():
     expected_output = 56
     assert Helpers.duration_to_seconds(input_duration) == expected_output
 
+    input_duration = '0:55.9'
+    expected_output = 56
+    assert Helpers.duration_to_seconds(input_duration) == expected_output
+
+    input_duration = '0:55.90'
+    expected_output = 56
+    assert Helpers.duration_to_seconds(input_duration) == expected_output
+
+    input_duration = '0:55.95'
+    expected_output = 56
+    assert Helpers.duration_to_seconds(input_duration) == expected_output
+
 # Test case 5: invalid input with missing minutes
 def test_duration_to_seconds_invalid_missing_minutes():
     input_duration = ':45'

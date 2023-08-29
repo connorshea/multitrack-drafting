@@ -7,6 +7,8 @@ please see the tool’s [on-wiki documentation page](https://www.wikidata.org/wi
 
 ## Toolforge setup
 
+To connect to Toolforge, use `ssh USERNAME@login.toolforge.org`
+
 On Wikimedia Toolforge, this tool runs under the `multitrack-drafting` tool name.
 Source code resides in `~/www/python/src/`,
 a virtual environment is set up in `~/www/python/venv/`,
