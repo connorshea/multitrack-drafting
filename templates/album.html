@@ -53,6 +53,17 @@
     <small id="trackTypeHelp" class="form-text text-muted">The 'instance of' to use for the track items that are created.</small>
   </div>
 
+  <!-- Picker for live vs studio recordings -->
+  <div class="form-group">
+    <label for="track_type">Type of recordings</label>
+    <select class="form-control" id="recording_type" name="recording_type" aria-describedby="recordingTypeHelp">
+      <option value="none" selected></option>
+      <option value="studio_recording">Studio recording</option>
+      <option value="live_recording">Live recording</option>
+    </select>
+    <small id="recordingTypeHelp" class="form-text text-muted">Whether the tracks should be marked as studio recordings or live recordings. If you have a mix of types in the album, or if you do not know, leave this blank.</small>
+  </div>
+
   <!-- Picker for track description language -->
   <div class="form-row">
     <div class="form-group col-md-3">

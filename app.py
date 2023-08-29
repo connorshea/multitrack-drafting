@@ -36,10 +36,14 @@ TRACKLIST_PROPERTY = 'P95821' if TEST_WIKIDATA else 'P658'
 SERIES_ORDINAL_PROPERTY = 'P551' if TEST_WIKIDATA else 'P1545'
 DURATION_PROPERTY = 'P374' if TEST_WIKIDATA else 'P2047'
 ISRC_PROPERTY = 'P97842' if TEST_WIKIDATA else 'P1243'
+HAS_QUALITY_PROPERTY = 'P89895' if TEST_WIKIDATA else 'P1552'
 ALBUM_ITEM = 'Q1785' if TEST_WIKIDATA else 'Q482994'
 AUDIO_TRACK_ITEM = 'Q232068' if TEST_WIKIDATA else 'Q7302866'
 MUSIC_TRACK_WITH_VOCALS_ITEM = 'Q232069' if TEST_WIKIDATA else 'Q55850593'
 MUSIC_TRACK_WITHOUT_VOCALS_ITEM = 'Q232162' if TEST_WIKIDATA else 'Q55850643'
+
+LIVE_RECORDING_ITEM = 'Q232189' if TEST_WIKIDATA else 'Q56123235'
+STUDIO_RECORDING_ITEM = 'Q232188' if TEST_WIKIDATA else 'Q15975575'
 
 VALID_ALBUM_TYPES = [
     1785 if TEST_WIKIDATA else 482994, # album
@@ -181,6 +185,7 @@ def create_tracklist_items(
         producer_qid: int | None,
         language: str,
         track_type: str,
+        recording_type: str | None,
         track_description_language: str,
         track_description: str,
         edit_group_id: str
@@ -196,6 +201,7 @@ def create_tracklist_items(
             producer_qid=producer_qid,
             language=language,
             track_type=track_type,
+            recording_type=recording_type,
             track_description_language=track_description_language,
             track_description=track_description,
             duration=track.get('duration'),
@@ -257,6 +263,7 @@ def create_wikidata_track_item(
         producer_qid: int | None,
         language: str,
         track_type: str,
+        recording_type: str | None,
         track_description_language: str,
         track_description: str,
         duration: int | None,
@@ -327,7 +334,7 @@ def create_wikidata_track_item(
                 'rank': 'normal'
             }
         )
-    
+
     # If we have an ISRC ID, add it to the data.
     if isrc_id != None and isrc_id != '':
         data['claims'].append(
@@ -344,6 +351,13 @@ def create_wikidata_track_item(
                 'type': 'statement',
                 'rank': 'normal'
             }
+        )
+
+    # Add 'has quality' statement with the type of recording.
+    if recording_type != None:
+        recording_type_item = STUDIO_RECORDING_ITEM if recording_type == 'studio_recording' else LIVE_RECORDING_ITEM
+        data['claims'].append(
+            generate_wikidata_claim_object(HAS_QUALITY_PROPERTY, recording_type_item)
         )
 
     return session.post(
@@ -550,6 +564,9 @@ def album_post(item_id: int) -> RRV:
     csrf_error = False
     if submitted_request_valid():
         track_type = flask.request.form.get('track_type')
+        recording_type = flask.request.form.get('recording_type')
+        if recording_type == 'none':
+            recording_type = None
         track_description_language = flask.request.form.get('track_description_language')
         track_description = flask.request.form.get('track_description')
         tracklist = flask.request.form.get('tracklist')
@@ -624,6 +641,7 @@ def album_post(item_id: int) -> RRV:
         producer_qid=producer_qid,
         language=language,
         track_type=track_type,
+        recording_type=recording_type,
         track_description_language=track_description_language,
         track_description=track_description,
         edit_group_id=edit_group_id
