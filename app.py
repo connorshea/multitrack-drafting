@@ -343,6 +343,7 @@ def add_tracklist_to_album_item(
         item_id: int,
         track_items: list[dict],
         include_track_numbers: bool,
+        include_durations_as_qualifiers: bool,
         edit_group_id: str
     ):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
@@ -384,7 +385,7 @@ def add_tracklist_to_album_item(
                 ]
             })
 
-        if 'duration' in track_item:
+        if include_durations_as_qualifiers and 'duration' in track_item:
             claim['qualifiers'].update({
                 DURATION_PROPERTY: [
                     {
@@ -544,6 +545,7 @@ def album_post(item_id: int) -> RRV:
         recorded_at_qid = Helpers.normalize_qid(flask.request.form.get('recorded_at_qid'))
         producer_qid = Helpers.normalize_qid(flask.request.form.get('producer_qid'))
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
+        include_durations_as_qualifiers = flask.request.form.get('include_durations_as_qualifiers') == 'on'
         language = flask.request.form.get('language')
     else:
         csrf_error = True
@@ -617,7 +619,7 @@ def album_post(item_id: int) -> RRV:
         edit_group_id=edit_group_id
     )
 
-    add_tracklist_to_album_item(session, item_id=item_id, track_items=track_items, include_track_numbers=include_track_numbers, edit_group_id=edit_group_id)
+    add_tracklist_to_album_item(session, item_id=item_id, track_items=track_items, include_track_numbers=include_track_numbers, include_durations_as_qualifiers=include_durations_as_qualifiers, edit_group_id=edit_group_id)
 
     # Provide a success message to confirm to the user that the records were created.
     flask.flash('Successfully created track items and tracklist.', 'success')
