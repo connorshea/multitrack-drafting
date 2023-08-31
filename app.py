@@ -394,6 +394,11 @@ def create_wikidata_composition_item(
         generate_wikidata_claim_object(INSTANCE_OF_PROPERTY, MUSICAL_WORK_OR_COMPOSITION_ITEM)
     )
 
+    # Add 'title' statement.
+    data['claims'].append(
+        generate_wikidata_monolingual_text_claim_object(TITLE_PROPERTY, language=language, string=title)
+    )
+
     # Mark the composition's 'form of creative work' as song.
     data['claims'].append(
         generate_wikidata_claim_object(FORM_OF_CREATIVE_WORK_PROPERTY, SONG_ITEM)
