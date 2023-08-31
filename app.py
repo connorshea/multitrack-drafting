@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 import decorator
 import flask
 from flask.typing import ResponseReturnValue as RRV
@@ -163,6 +164,9 @@ def create_tracklist_items(
     ) -> list[dict]:
     track_item_ids = []
     for track in tracklist:
+        # Sleep for half a second between every track to avoid being rate-limited.
+        time.sleep(0.5)
+
         composition_item = None
         # Create work/composition item.
         if create_work_or_composition_items == True:
