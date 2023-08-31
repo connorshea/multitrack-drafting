@@ -53,17 +53,6 @@
     <small id="trackTypeHelp" class="form-text text-muted">The 'instance of' to use for the track items that are created.</small>
   </div>
 
-  <!-- Picker for live vs studio recordings -->
-  <div class="form-group">
-    <label for="track_type">Type of recordings</label>
-    <select class="form-control" id="recording_type" name="recording_type" aria-describedby="recordingTypeHelp">
-      <option value="none" selected></option>
-      <option value="studio_recording">Studio recording</option>
-      <option value="live_recording">Live recording</option>
-    </select>
-    <small id="recordingTypeHelp" class="form-text text-muted">Whether the tracks should be marked as studio recordings or live recordings. If you have a mix of types in the album, or if you do not know, leave this blank.</small>
-  </div>
-
   <!-- Picker for track description language -->
   <div class="form-row">
     <div class="form-group col-md-3">
@@ -124,6 +113,17 @@
     <small id="languageHelp" class="form-text text-muted">The language code of the title property and label used for the individual track items. For example, <code>en</code>, <code>es</code>, <code>fr</code>, etc.</small>
   </div>
 
+  <!-- Picker for live vs studio recordings -->
+  <div class="form-group">
+    <label for="track_type">Type of recordings</label>
+    <select class="form-control" id="recording_type" name="recording_type" aria-describedby="recordingTypeHelp">
+      <option value="none" selected></option>
+      <option value="studio_recording">Studio recording</option>
+      <option value="live_recording">Live recording</option>
+    </select>
+    <small id="recordingTypeHelp" class="form-text text-muted">Whether the tracks should be marked as studio recordings or live recordings. If you have a mix of types in the album, or if you do not know, leave this blank.</small>
+  </div>
+
   <div class="form-group form-check">
     <input type="checkbox" class="form-check-input" id="include_track_numbers" name="include_track_numbers" checked>
     <label class="form-check-label" for="include_track_numbers">Include track numbers as qualifiers</label>
@@ -132,6 +132,11 @@
   <div class="form-group form-check">
     <input type="checkbox" class="form-check-input" id="include_durations_as_qualifiers" name="include_durations_as_qualifiers" checked>
     <label class="form-check-label" for="include_durations_as_qualifiers">Include durations as qualifiers</label>
+  </div>
+
+  <div class="form-group form-check">
+    <input type="checkbox" class="form-check-input" id="create_work_or_composition_items" name="create_work_or_composition_items">
+    <label class="form-check-label" for="create_work_or_composition_items">Create musical work/composition items for each track</label>
   </div>
   
   <button type="submit" class="btn btn-primary mb-5">Create tracklist</button>

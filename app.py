@@ -23,7 +23,7 @@ from constants import (
     RECORDED_AT_PROPERTY, PRODUCER_PROPERTY, TRACKLIST_PROPERTY, SERIES_ORDINAL_PROPERTY,
     DURATION_PROPERTY, ISRC_PROPERTY, HAS_QUALITY_PROPERTY, RECORDING_OR_PERFORMANCE_OF_PROPERTY,
     LIVE_RECORDING_ITEM, STUDIO_RECORDING_ITEM, VALID_ALBUM_TYPES, SECONDS_UNIT, TRACK_TYPES,
-    MUSICAL_WORK_OR_COMPOSITION_ITEM
+    MUSICAL_WORK_OR_COMPOSITION_ITEM, FORM_OF_CREATIVE_WORK_PROPERTY, SONG_ITEM
 )
 
 app = flask.Flask(__name__)
@@ -157,11 +157,25 @@ def create_tracklist_items(
         track_type: str,
         recording_type: str | None,
         track_description_language: str,
+        create_work_or_composition_items: bool,
         track_description: str,
         edit_group_id: str
     ) -> list[dict]:
     track_item_ids = []
     for track in tracklist:
+        composition_item = None
+        # Create work/composition item.
+        if create_work_or_composition_items == True:
+            composition_item = create_wikidata_composition_item(
+                session=session,
+                title=track['name'],
+                language=language,
+                description_language='en',
+                description='song',
+                performer_qid=performer_qid,
+                edit_group_id=edit_group_id
+            )
+
         # Create track item.
         track_item = create_wikidata_track_item(
             session,
@@ -176,6 +190,7 @@ def create_tracklist_items(
             track_description=track_description,
             duration=track.get('duration'),
             isrc_id=track.get('isrc_id'),
+            composition_item=composition_item,
             edit_group_id=edit_group_id
         )
         track_item_dict = { 'wikidata_id': int(track_item['entity']['id'][1:]) }
@@ -238,6 +253,7 @@ def create_wikidata_track_item(
         track_description: str,
         duration: int | None,
         isrc_id: str | None,
+        composition_item: int | None,
         edit_group_id: str
     ):
     csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
@@ -330,6 +346,12 @@ def create_wikidata_track_item(
             generate_wikidata_claim_object(HAS_QUALITY_PROPERTY, recording_type_item)
         )
 
+    # Add 'recording or performance of' statement with the composition item.
+    if composition_item != None:
+        data['claims'].append(
+            generate_wikidata_claim_object(RECORDING_OR_PERFORMANCE_OF_PROPERTY, f'Q{composition_item}')
+        )
+
     return session.post(
         action='wbeditentity',
         new='item',
@@ -337,6 +359,57 @@ def create_wikidata_track_item(
         data=json.dumps(data),
         summary=f'Create new item for music track on album. ([[:toolforge:editgroups/b/multitrack/{edit_group_id}|details]])'
     )
+
+def create_wikidata_composition_item(
+    session: mwapi.Session,
+    title: str,
+    language: str,
+    description_language: str,
+    description: str,
+    performer_qid: int | None,
+    edit_group_id: str
+) -> int:
+    csrf_token_from_wikidata = session.get(action='query', meta='tokens')['query']['tokens']['csrftoken']
+
+    data = {
+        'labels': [
+            {
+                'language': language, 'value': title
+            }
+        ],
+        'descriptions': [
+            {
+                'language': description_language, 'value': description
+            }
+        ],
+        'claims': []
+    }
+
+    # Add an 'instance of' musical work/composition.
+    data['claims'].append(
+        generate_wikidata_claim_object(INSTANCE_OF_PROPERTY, MUSICAL_WORK_OR_COMPOSITION_ITEM)
+    )
+
+    # Mark the composition's 'form of creative work' as song.
+    data['claims'].append(
+        generate_wikidata_claim_object(FORM_OF_CREATIVE_WORK_PROPERTY, SONG_ITEM)
+    )
+
+    if performer_qid != None and performer_qid != '':
+        data['claims'].append(
+            generate_wikidata_claim_object(PERFORMER_PROPERTY, f'Q{performer_qid}')
+        )
+
+    item = session.post(
+        action='wbeditentity',
+        new='item',
+        token=csrf_token_from_wikidata,
+        data=json.dumps(data),
+        summary=f'Create new item for composition/work associated to track. ([[:toolforge:editgroups/b/multitrack/{edit_group_id}|details]])'
+    )
+
+    # Return the ID of the item we just created.
+    return int(item['entity']['id'][1:])
 
 def add_tracklist_to_album_item(
         session: mwapi.Session,
@@ -546,6 +619,7 @@ def album_post(item_id: int) -> RRV:
         producer_qid = Helpers.normalize_qid(flask.request.form.get('producer_qid'))
         include_track_numbers = flask.request.form.get('include_track_numbers') == 'on'
         include_durations_as_qualifiers = flask.request.form.get('include_durations_as_qualifiers') == 'on'
+        create_work_or_composition_items = flask.request.form.get('create_work_or_composition_items') == 'on'
         language = flask.request.form.get('language')
     else:
         csrf_error = True
@@ -615,6 +689,7 @@ def album_post(item_id: int) -> RRV:
         track_type=track_type,
         recording_type=recording_type,
         track_description_language=track_description_language,
+        create_work_or_composition_items=create_work_or_composition_items,
         track_description=track_description,
         edit_group_id=edit_group_id
     )
