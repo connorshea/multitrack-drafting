@@ -163,6 +163,11 @@ def create_tracklist_items(
         edit_group_id: str
     ) -> list[dict]:
     track_item_ids = []
+
+    if create_work_or_composition_items == True:
+        performer_name = get_wikidata_item_name(session, performer_qid, 'en') if performer_qid != None else None
+        desc = f'song by {performer_name}' if performer_name != None else 'song'
+
     for track in tracklist:
         # Sleep for half a second between every track to avoid being rate-limited.
         time.sleep(0.5)
@@ -175,7 +180,7 @@ def create_tracklist_items(
                 title=track['name'],
                 language=language,
                 description_language='en',
-                description='song',
+                description=desc,
                 performer_qid=performer_qid,
                 edit_group_id=edit_group_id
             )
