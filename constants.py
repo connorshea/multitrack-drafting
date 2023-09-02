@@ -27,6 +27,7 @@ VALID_ALBUM_TYPES = [
     1785 if TEST_WIKIDATA else 482994, # album
     232169 if TEST_WIKIDATA else 169930, # EP
     123 if TEST_WIKIDATA else 108352648, # album release
+    181214 if TEST_WIKIDATA else 134556, # single
     124 if TEST_WIKIDATA else 108352496, # single release
     125 if TEST_WIKIDATA else 108346556 # EP release
 ]
